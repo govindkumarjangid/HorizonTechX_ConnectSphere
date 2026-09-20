@@ -74,6 +74,9 @@ const userSchema = new mongoose.Schema(
 
     lastLoginAt: { type: Date },
     passwordChangedAt: { type: Date, select: false },
+
+    // SHA-256 hash of the current refresh token, never the raw token
+    refreshToken: { type: String, select: false },
   },
   {
     timestamps: true,
@@ -81,6 +84,7 @@ const userSchema = new mongoose.Schema(
       transform(_doc, ret) {
         delete ret.password;
         delete ret.passwordChangedAt;
+        delete ret.refreshToken;
         delete ret.__v;
         return ret;
       },
@@ -90,19 +94,27 @@ const userSchema = new mongoose.Schema(
 
 // username and email already get unique indexes from `unique: true`
 
+// user search (search bar)
 userSchema.index(
   { username: 'text', fullName: 'text' },
   { weights: { username: 5, fullName: 2 }, name: 'user_search_text' }
 );
+
+// suggested users / newest users
 userSchema.index({ isActive: 1, createdAt: -1 });
 
 // hash password only when it is new or changed
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
+
   this.password = await bcrypt.hash(this.password, SALT_ROUNDS);
-  if (!this.isNew)
+
+  if (!this.isNew) {
     // 1s back so a token issued right after the change is still valid
     this.passwordChangedAt = new Date(Date.now() - 1000);
+    // password changed, so the old refresh token must stop working
+    this.refreshToken = undefined;
+  }
 });
 
 // needs the document loaded with .select('+password')
