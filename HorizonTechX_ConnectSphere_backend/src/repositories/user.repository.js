@@ -1,12 +1,5 @@
 import User from '../models/User.model.js';
-
-// what anyone can see on a profile (no email, no secrets)
-const PUBLIC_FIELDS =
-  'username fullName bio avatar followersCount followingCount postsCount createdAt';
-
-const COUNTER_FIELDS = ['followersCount', 'followingCount', 'postsCount'];
-
-const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+import { PUBLIC_FIELDS, COUNTER_FIELDS, escapeRegex } from "../constents.js";
 
 const userRepository = {
   create(data) {
@@ -17,7 +10,6 @@ const userRepository = {
     return User.findById(id);
   },
 
-  // auth middleware also needs passwordChangedAt to reject old tokens
   findByIdForAuth(id) {
     return User.findById(id).select('+passwordChangedAt');
   },
@@ -54,13 +46,12 @@ const userRepository = {
     return User.findByIdAndUpdate(id, { $set: changes }, { new: true, runValidators: true });
   },
 
-  // goes through save() so the model hook hashes the password
+
   savePassword(user, newPassword) {
     user.password = newPassword;
     return user.save();
   },
 
-  // pass null to remove the stored token (logout)
   saveRefreshToken(id, hashedToken) {
     const update = hashedToken
       ? { $set: { refreshToken: hashedToken } }
@@ -73,13 +64,10 @@ const userRepository = {
     return User.updateOne({ _id: id }, { $set: { lastLoginAt: new Date() } });
   },
 
-  // returns only { _id, <field> } after the update
   incrementCounter(id, field, amount) {
-    if (!COUNTER_FIELDS.includes(field)) {
+    if (!COUNTER_FIELDS.includes(field))
       throw new Error(`Unknown counter field: ${field}`);
-    }
 
-    // a counter never goes below zero
     const filter = amount < 0 ? { _id: id, [field]: { $gt: 0 } } : { _id: id };
 
     return User.findOneAndUpdate(
@@ -89,7 +77,6 @@ const userRepository = {
     ).lean();
   },
 
-  // username is stored lowercase so its prefix match can use the index
   search(text, { skip, limit }) {
     const lowerText = escapeRegex(text.toLowerCase());
     const rawText = escapeRegex(text);

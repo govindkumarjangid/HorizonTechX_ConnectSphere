@@ -1,7 +1,6 @@
 import env from '../configs/env.config.js';
 import ApiError from '../utils/ApiError.js';
 
-// Errors are matched by name/code (not instanceof) so this file does not need
 const normalizeError = (err) => {
   if (err instanceof ApiError)
     return { statusCode: err.statusCode, message: err.message, errors: err.errors };

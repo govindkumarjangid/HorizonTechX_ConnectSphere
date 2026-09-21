@@ -28,10 +28,7 @@ const commentSchema = new mongoose.Schema(
   }
 );
 
-// comments under a post, newest first (main query)
 commentSchema.index({ post: 1, createdAt: -1 });
-
-// all comments by a user (profile / cleanup)
 commentSchema.index({ author: 1, createdAt: -1 });
 
 const Comment = mongoose.model('Comment', commentSchema);

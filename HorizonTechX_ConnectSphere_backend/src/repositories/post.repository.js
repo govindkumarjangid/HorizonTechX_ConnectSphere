@@ -32,7 +32,6 @@ const postRepository = {
     return Post.findByIdAndDelete(id).lean();
   },
 
-  // feed and profile page both use this, newest first
   findByAuthorIds(authorIds, { skip, limit }) {
     return withAuthor(
       Post.find({ author: { $in: authorIds } })
@@ -42,7 +41,6 @@ const postRepository = {
     );
   },
 
-  // returns the post only if the user had NOT liked it yet
   addLike(postId, userId) {
     return Post.findOneAndUpdate(
       { _id: postId, likes: { $ne: userId } },
@@ -51,7 +49,6 @@ const postRepository = {
     ).lean();
   },
 
-  // returns the post only if the user HAD liked it
   removeLike(postId, userId) {
     return Post.findOneAndUpdate(
       { _id: postId, likes: userId },
@@ -61,9 +58,7 @@ const postRepository = {
   },
 
   incrementCommentsCount(id, amount) {
-    // a counter never goes below zero
     const filter = amount < 0 ? { _id: id, commentsCount: { $gt: 0 } } : { _id: id };
-
     return Post.updateOne(filter, { $inc: { commentsCount: amount } });
   },
 };

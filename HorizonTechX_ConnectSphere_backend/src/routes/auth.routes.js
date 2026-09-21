@@ -10,16 +10,14 @@ import {
 
 const router = Router();
 
-router.post('/register', registerRules, validate, authController.register);
-router.post('/login', loginRules, validate, authController.login);
+router.route('/register').post(registerRules, validate, authController.register);
+router.route('/login').post(loginRules, validate, authController.login);
 
-// these two read the refresh token cookie, so no access token is needed
-router.post('/refresh', authController.refresh);
-router.post('/logout', authController.logout);
+routerroute('/refresh').post(authController.refresh);
+routerroute('/logout').post(authController.logout);
 
-router.get('/me', protect, authController.getMe);
-router.patch(
-  '/change-password',
+router.route('/me').get(protect, authController.getMe);
+router.route('/change-password').patch(
   protect,
   changePasswordRules,
   validate,

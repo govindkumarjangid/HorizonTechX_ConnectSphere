@@ -1,6 +1,3 @@
-// Removes keys like $ne, $gt and dotted keys from req.body so a client
-// cannot send { "email": { "$ne": null } } into a query.
-// Only the body is cleaned: Express 5 parses req.query as plain strings already.
 const clean = (value) => {
   if (Array.isArray(value)) {
     value.forEach(clean);

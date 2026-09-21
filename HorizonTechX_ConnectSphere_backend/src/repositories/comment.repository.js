@@ -3,7 +3,7 @@ import Comment from '../models/Comment.model.js';
 const AUTHOR_FIELDS = 'username fullName avatar';
 
 const commentRepository = {
-  // returns the new comment with author details filled in
+
   async create(data) {
     const comment = await Comment.create(data);
     return Comment.findById(comment._id).populate('author', AUTHOR_FIELDS).lean();

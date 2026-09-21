@@ -25,3 +25,10 @@ export const PRESETS = {
     ],
   },
 };
+
+export const PUBLIC_FIELDS =
+  'username fullName bio avatar followersCount followingCount postsCount createdAt';
+
+export const COUNTER_FIELDS = ['followersCount', 'followingCount', 'postsCount'];
+
+export const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

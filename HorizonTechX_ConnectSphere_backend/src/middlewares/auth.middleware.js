@@ -15,17 +15,14 @@ export const protect = asyncHandler(async (req, _res, next) => {
   const token = getToken(req);
   if (!token) throw ApiError.unauthorized('Authentication required');
 
-  // expired / invalid tokens throw here, error middleware turns them into 401
   const decoded = verifyAccessToken(token);
 
   const user = await userRepository.findByIdForAuth(decoded._id);
-  if (!user || !user.isActive) {
+  if (!user || !user.isActive)
     throw ApiError.unauthorized('User no longer exists or is deactivated');
-  }
 
-  if (user.changedPasswordAfter(decoded.iat)) {
+  if (user.changedPasswordAfter(decoded.iat))
     throw ApiError.unauthorized('Password was changed, please log in again');
-  }
 
   req.user = user;
   next();
