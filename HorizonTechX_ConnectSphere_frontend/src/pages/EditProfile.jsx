@@ -1,197 +1,225 @@
-import React, { useState, useRef } from 'react';
-import { Camera, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Camera, AlertCircle } from 'lucide-react';
 import Modal from '../components/common/Modal';
 import Avatar from '../components/users/Avatar';
-import { useAuth } from '../store/useAuthStore';
+import useAuthStore from '../store/useAuthStore';
+import useUserStore from '../store/useUserStore';
+import useToastStore from '../store/useToastStore';
+import Loader from '../components/common/Loader';
 
-export const EditProfile = ({ isOpen, onClose }) => {
-  const { user, updateProfile } = useAuth();
-  const avatarInputRef = useRef(null);
-  const coverInputRef = useRef(null);
+export const EditProfile = ({ isOpen, onClose, onProfileUpdated }) => {
+  const user = useAuthStore((state) => state.user);
+  const updateProfile = useUserStore((state) => state.updateProfile);
+  const isUpdatingProfile = useUserStore((state) => state.isUpdatingProfile);
 
-  const [formData, setFormData] = useState({
-    fullName: user?.fullName || '',
-    title: user?.title || '',
-    bio: user?.bio || '',
-    location: user?.location || '',
-    website: user?.website || '',
-    avatar: user?.avatar || '',
-    coverPhoto: user?.coverPhoto || '',
-  });
+  const [fullName, setFullName] = useState(user?.fullName || '');
+  const [username, setUsername] = useState(user?.username || '');
+  const [bio, setBio] = useState(user?.bio || '');
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [error, setError] = useState('');
 
-  const handleAvatarFile = (e) => {
+  const fileInputRef = useRef(null);
+
+  // Sync state whenever modal opens or user updates
+  useEffect(() => {
+    if (isOpen) {
+      const currentUser = user || useAuthStore.getState().user;
+      setFullName(currentUser?.fullName || '');
+      setUsername(currentUser?.username || '');
+      setBio(currentUser?.bio || '');
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      setError('');
+    }
+  }, [isOpen, user]);
+
+  const handleAvatarSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setFormData((prev) => ({ ...prev, avatar: event.target.result }));
-      }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+
+    if (!file.type.startsWith('image/')) {
+      useToastStore.getState().error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      useToastStore.getState().error('Image must be under 10MB');
+      return;
+    }
+
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
   };
 
-  const handleCoverFile = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setFormData((prev) => ({ ...prev, coverPhoto: event.target.result }));
-      }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    updateProfile(formData);
-    onClose?.();
+    setError('');
+
+    const trimmedUsername = username.trim().toLowerCase();
+    if (!trimmedUsername) {
+      const msg = 'Username cannot be empty';
+      setError(msg);
+      useToastStore.getState().error(msg);
+      return;
+    }
+
+    if (trimmedUsername.length < 3) {
+      const msg = 'Username must be at least 3 characters';
+      setError(msg);
+      useToastStore.getState().error(msg);
+      return;
+    }
+
+    if (!/^[a-z0-9_.]+$/.test(trimmedUsername)) {
+      const msg = 'Username can only contain letters, numbers, underscore and dot';
+      setError(msg);
+      useToastStore.getState().error(msg);
+      return;
+    }
+
+    let payload;
+    if (avatarFile) {
+      const formData = new FormData();
+      formData.append('username', trimmedUsername);
+      formData.append('fullName', fullName.trim());
+      formData.append('bio', bio.trim());
+      formData.append('avatar', avatarFile);
+      payload = formData;
+    } else {
+      payload = {
+        username: trimmedUsername,
+        fullName: fullName.trim(),
+        bio: bio.trim(),
+      };
+    }
+
+    const result = await updateProfile(payload);
+    if (result.success) {
+      onProfileUpdated?.(result.user);
+      onClose?.();
+    } else {
+      setError(result.error);
+    }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit Profile" maxWidth="max-w-lg">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Hidden File Inputs */}
-        <input
-          type="file"
-          ref={avatarInputRef}
-          accept="image/*"
-          className="hidden"
-          onChange={handleAvatarFile}
-        />
-        <input
-          type="file"
-          ref={coverInputRef}
-          accept="image/*"
-          className="hidden"
-          onChange={handleCoverFile}
-        />
+    <Modal isOpen={isOpen} onClose={onClose} title="Edit Profile" maxWidth="max-w-md">
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {error && (
+          <div className="flex items-center gap-1.5 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs border border-rose-200 dark:border-rose-900/50">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
-        {/* Cover & Avatar Upload Preview Area */}
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Profile Visuals
-          </label>
-          <div className="relative rounded-xl overflow-hidden bg-slate-800 h-28 border border-slate-200 dark:border-slate-700 group">
-            {formData.coverPhoto ? (
-              <img
-                src={formData.coverPhoto}
-                alt="Cover Preview"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
-                No cover photo
-              </div>
-            )}
+        {/* Real Avatar File Upload with Live Preview */}
+        <div className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
+          <div className="relative group">
+            <Avatar
+              src={avatarPreview || user?.avatar}
+              alt={username || 'avatar'}
+              size="xl"
+            />
             <button
               type="button"
-              onClick={() => coverInputRef.current?.click()}
-              className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-xs font-semibold text-white cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute inset-0 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors cursor-pointer"
+              title="Change avatar"
             >
-              <ImageIcon className="w-4 h-4" />
-              <span>Upload Cover Photo</span>
+              <Camera className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="flex items-center gap-4 pt-1">
-            <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
-              <Avatar src={formData.avatar} alt={formData.fullName} size="xl" />
-              <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                <Camera className="w-5 h-5" />
-              </div>
-            </div>
-            <div>
-              <button
-                type="button"
-                onClick={() => avatarInputRef.current?.click()}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                Upload Avatar
-              </button>
-              <p className="text-[11px] text-slate-400 mt-1">JPG, PNG, or GIF format</p>
-            </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              Profile Photo
+            </h4>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              JPG, PNG or WEBP up to 10MB
+            </p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="mt-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+            >
+              Upload new photo
+            </button>
           </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarSelect}
+            className="hidden"
+          />
         </div>
 
+        {/* Full Name */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
             Full Name
           </label>
           <input
             type="text"
-            required
-            value={formData.fullName}
-            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-            className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-500"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Enter your name"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-500 transition-colors"
           />
         </div>
 
+        {/* Username */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-            Professional Title / Role
+            Username
           </label>
           <input
             type="text"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-500"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Enter your username"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-500 transition-colors"
           />
         </div>
 
+        {/* Bio */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
             Bio
           </label>
           <textarea
             rows={3}
-            value={formData.bio}
-            onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-            className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-500 resize-none"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            maxLength={160}
+            placeholder="Tell something about yourself..."
+            className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-500 resize-none transition-colors"
           />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Location
-            </label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Website URL
-            </label>
-            <input
-              type="url"
-              value={formData.website}
-              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-              className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-500"
-            />
-          </div>
+          <span className="text-[11px] text-slate-400 block text-right mt-1">
+            {160 - bio.length} characters left
+          </span>
         </div>
 
         <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-5 py-2 text-xs font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-500/20 cursor-pointer"
+            disabled={isUpdatingProfile}
+            className="px-5 py-2 text-xs font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 cursor-pointer flex items-center gap-1.5 transition-colors shadow-md shadow-blue-500/20"
           >
-            Save Changes
+            {isUpdatingProfile ? (
+              <Loader size="xs" className="text-white" />
+            ) : (
+              'Save Changes'
+            )}
           </button>
         </div>
       </form>

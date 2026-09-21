@@ -1,71 +1,148 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import { currentUser as initialUser } from '../utils/mockData';
+import { create } from 'zustand';
+import authApi from '../api/authApi';
+import useToastStore from './useToastStore';
 
-const AuthContext = createContext(null);
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
+export const useAuthStore = create((set, get) => ({
+  user: (() => {
     try {
       const saved = localStorage.getItem('cs_user');
-      if (saved) return JSON.parse(saved);
-    } catch (_e) {
-      // ignore parse error
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
     }
-    return initialUser;
-  });
+  })(),
+  token: localStorage.getItem('token') || localStorage.getItem('cs_token') || null,
+  isAuthenticated: Boolean(localStorage.getItem('token') || localStorage.getItem('cs_token')),
+  isLoading: true,
+  isSubmitting: false,
 
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  checkAuth: async () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('cs_token');
+    if (!token) {
+      set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+      return;
+    }
 
-  const updateProfile = useCallback((updatedFields) => {
-    setUser((prev) => {
-      const next = { ...prev, ...updatedFields };
-      try {
-        localStorage.setItem('cs_user', JSON.stringify(next));
-      } catch (_e) {
-        // ignore storage error
+    try {
+      set({ isLoading: true });
+      const apiFn = authApi.getMe || authApi.getCurrentUser;
+      const res = await apiFn();
+      const userData = res.data?.data || res.data;
+      if (userData) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('cs_token', token);
+        localStorage.setItem('cs_user', JSON.stringify(userData));
+        set({
+          user: userData,
+          token,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      } else {
+        throw new Error('No user data returned');
       }
-      return next;
-    });
-  }, []);
-
-  const login = useCallback((userData) => {
-    const newUser = userData || initialUser;
-    setUser(newUser);
-    setIsAuthenticated(true);
-    try {
-      localStorage.setItem('cs_user', JSON.stringify(newUser));
-    } catch (_e) {
-      // ignore storage error
-    }
-  }, []);
-
-  const logout = useCallback(() => {
-    setIsAuthenticated(false);
-    try {
+    } catch {
+      localStorage.removeItem('token');
+      localStorage.removeItem('cs_token');
       localStorage.removeItem('cs_user');
-    } catch (_e) {
-      // ignore storage error
+      set({
+        user: null,
+        token: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
     }
-  }, []);
+  },
 
-  const contextValue = useMemo(
-    () => ({ user, isAuthenticated, updateProfile, login, logout }),
-    [user, isAuthenticated, updateProfile, login, logout]
-  );
+  login: async (credentials) => {
+    try {
+      set({ isSubmitting: true });
+      const res = await authApi.login(credentials);
+      const data = res.data?.data || res.data;
 
-  return React.createElement(
-    AuthContext.Provider,
-    { value: contextValue },
-    children
-  );
-};
+      if (!data?.token || !data?.user) {
+        throw new Error('Invalid response from server');
+      }
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('cs_token', data.token);
+      localStorage.setItem('cs_user', JSON.stringify(data.user));
 
-export default useAuth;
+      set({
+        user: data.user,
+        token: data.token,
+        isAuthenticated: true,
+        isLoading: false,
+        isSubmitting: false,
+      });
+
+      useToastStore.getState().success(`Welcome back, ${data.user.fullName || data.user.username}!`);
+      return { success: true, user: data.user };
+    } catch (err) {
+      set({ isSubmitting: false });
+      const message = err.response?.data?.message || err.message || 'Login failed';
+      useToastStore.getState().error(message);
+      return { success: false, error: message };
+    }
+  },
+
+  register: async (userData) => {
+    try {
+      set({ isSubmitting: true });
+      const res = await authApi.register(userData);
+      const data = res.data?.data || res.data;
+
+      if (!data?.token || !data?.user) {
+        throw new Error('Invalid response from server');
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('cs_token', data.token);
+      localStorage.setItem('cs_user', JSON.stringify(data.user));
+
+      set({
+        user: data.user,
+        token: data.token,
+        isAuthenticated: true,
+        isLoading: false,
+        isSubmitting: false,
+      });
+
+      useToastStore.getState().success('Account created successfully! Welcome to ConnectSphere.');
+      return { success: true, user: data.user };
+    } catch (err) {
+      set({ isSubmitting: false });
+      const message = err.response?.data?.message || err.message || 'Registration failed';
+      useToastStore.getState().error(message);
+      return { success: false, error: message };
+    }
+  },
+
+  logout: async () => {
+    try {
+      await authApi.logout().catch(() => {});
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('cs_token');
+      localStorage.removeItem('cs_user');
+      set({
+        user: null,
+        token: null,
+        isAuthenticated: false,
+        isLoading: false,
+        isSubmitting: false,
+      });
+      useToastStore.getState().info('You have been logged out');
+    }
+  },
+
+  updateUser: (updatedFields) => {
+    const currentUser = get().user;
+    if (!currentUser) return;
+    const updated = { ...currentUser, ...updatedFields };
+    localStorage.setItem('cs_user', JSON.stringify(updated));
+    set({ user: updated });
+  },
+}));
+
+export default useAuthStore;

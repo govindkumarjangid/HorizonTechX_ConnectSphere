@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  optimizeDeps: {
+    include: ['zustand', 'socket.io-client', 'axios', 'framer-motion', 'lucide-react'],
+  },
   build: {
     rollupOptions: {
       output: {
@@ -13,7 +16,7 @@ export default defineConfig({
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
               return 'vendor-react';
             }
-            if (id.includes('framer-motion') || id.includes('gsap') || id.includes('lenis')) {
+            if (id.includes('framer-motion') || id.includes('lenis')) {
               return 'vendor-motion';
             }
             if (id.includes('swiper')) {

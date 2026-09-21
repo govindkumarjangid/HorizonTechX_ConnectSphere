@@ -1,7 +1,9 @@
 import ApiError from '../utils/ApiError.js';
 import { User, Follow } from '../models/index.js';
+import { uploadMedia } from '../configs/cloudinary.config.js';
+import { emitProfileUpdated } from '../socket.js';
 
-const PUBLIC_FIELDS = 'username bio avatar followersCount followingCount postsCount createdAt';
+const PUBLIC_FIELDS = 'fullName username bio avatar followersCount followingCount postsCount createdAt';
 
 const getProfile = async (username, currentUserId) => {
   const user = await User.findOne({ username: username.toLowerCase() }).select(PUBLIC_FIELDS);
@@ -19,9 +21,23 @@ const getProfile = async (username, currentUserId) => {
   };
 };
 
-const updateProfile = async (userId, { username, bio, avatar }) => {
+const updateProfile = async (userId, { fullName, username, bio, avatar } = {}, file = null) => {
   const user = await User.findById(userId);
   if (!user) throw ApiError.notFound('User not found');
+
+  if (file && file.buffer) {
+    const uploaded = await uploadMedia(file.buffer, {
+      type: 'avatar',
+      mimetype: file.mimetype,
+    });
+    user.avatar = uploaded.url;
+  } else if (avatar !== undefined) {
+    user.avatar = avatar.trim();
+  }
+
+  if (fullName !== undefined) {
+    user.fullName = fullName.trim();
+  }
 
   if (username !== undefined) {
     const normalized = username.trim().toLowerCase();
@@ -38,12 +54,10 @@ const updateProfile = async (userId, { username, bio, avatar }) => {
     user.bio = bio.trim();
   }
 
-  if (avatar !== undefined) {
-    user.avatar = avatar.trim();
-  }
-
   await user.save();
-  return user.toJSON();
+  const userJson = user.toJSON();
+  emitProfileUpdated(userJson);
+  return userJson;
 };
 
 const getSuggestions = async (currentUserId, limit = 5) => {

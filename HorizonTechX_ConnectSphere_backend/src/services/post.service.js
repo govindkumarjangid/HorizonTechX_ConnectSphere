@@ -1,16 +1,40 @@
 import ApiError from '../utils/ApiError.js';
 import { Post, Like, Comment, User, Follow } from '../models/index.js';
-import { emitNotification } from '../socket.js';
+import {
+  emitNotification,
+  emitPostCreated,
+  emitPostDeleted,
+  emitPostLikeUpdated,
+  emitPostUpdated,
+} from '../socket.js';
+import { uploadMedia, deleteMedia } from '../configs/cloudinary.config.js';
 
-const AUTHOR_FIELDS = 'username avatar';
+const AUTHOR_FIELDS = 'username avatar fullName';
 
-const createPost = async (userId, { content }) => {
+const createPost = async (userId, { content = '' } = {}, file = null) => {
   const trimmed = String(content || '').trim();
-  if (!trimmed) throw ApiError.badRequest('Post content is required');
+
+  let media = null;
+  if (file && file.buffer) {
+    const uploaded = await uploadMedia(file.buffer, {
+      type: 'post',
+      mimetype: file.mimetype,
+    });
+    media = {
+      url: uploaded.url,
+      publicId: uploaded.publicId,
+      mediaType: uploaded.mediaType,
+    };
+  }
+
+  if (!trimmed && !media) {
+    throw ApiError.badRequest('Post must contain text content or media');
+  }
 
   const post = await Post.create({
     author: userId,
     content: trimmed,
+    media: media || undefined,
   });
 
   await User.findByIdAndUpdate(userId, { $inc: { postsCount: 1 } });
@@ -19,7 +43,9 @@ const createPost = async (userId, { content }) => {
     .populate('author', AUTHOR_FIELDS)
     .lean();
 
-  return { ...populated, isLiked: false };
+  const result = { ...populated, isLiked: false };
+  emitPostCreated(result);
+  return result;
 };
 
 const deletePost = async (postId, userId) => {
@@ -30,7 +56,14 @@ const deletePost = async (postId, userId) => {
     throw ApiError.forbidden('You can only delete your own posts');
   }
 
+  if (post.media?.publicId) {
+    deleteMedia(post.media.publicId, post.media.mediaType).catch((err) => {
+      console.error('Failed to delete post media from Cloudinary:', err?.message);
+    });
+  }
+
   await Post.findByIdAndDelete(postId);
+  emitPostDeleted(postId);
 
   await Promise.all([
     Comment.deleteMany({ post: postId }),
@@ -129,11 +162,13 @@ const toggleLike = async (postId, currentUser) => {
     const updated = await Post.findByIdAndUpdate(
       postId,
       { $inc: { likesCount: -1 } },
-      { new: true }
+      { returnDocument: 'after' }
     );
+    const finalCount = Math.max(0, updated.likesCount);
+    emitPostLikeUpdated(postId, finalCount);
     return {
       isLiked: false,
-      likesCount: Math.max(0, updated.likesCount),
+      likesCount: finalCount,
     };
   }
 
@@ -141,8 +176,10 @@ const toggleLike = async (postId, currentUser) => {
   const updated = await Post.findByIdAndUpdate(
     postId,
     { $inc: { likesCount: 1 } },
-    { new: true }
+    { returnDocument: 'after' }
   );
+
+  emitPostLikeUpdated(postId, updated.likesCount);
 
   // Trigger real-time notification to post author
   emitNotification(post.author, {
@@ -162,8 +199,64 @@ const toggleLike = async (postId, currentUser) => {
   };
 };
 
+const updatePost = async (postId, userId, { content } = {}, file = null, removeMedia = false) => {
+  const post = await Post.findById(postId);
+  if (!post) throw ApiError.notFound('Post not found');
+
+  if (String(post.author) !== String(userId)) {
+    throw ApiError.forbidden('You can only edit your own posts');
+  }
+
+  // If user requested to remove existing media or upload replacement
+  if (removeMedia && post.media?.publicId) {
+    deleteMedia(post.media.publicId, post.media.mediaType).catch((err) => {
+      console.error('Failed to delete old post media from Cloudinary:', err?.message);
+    });
+    post.media = undefined;
+  }
+
+  if (file && file.buffer) {
+    if (post.media?.publicId) {
+      deleteMedia(post.media.publicId, post.media.mediaType).catch((err) => {
+        console.error('Failed to delete replaced media from Cloudinary:', err?.message);
+      });
+    }
+
+    const uploaded = await uploadMedia(file.buffer, {
+      type: 'post',
+      mimetype: file.mimetype,
+    });
+    post.media = {
+      url: uploaded.url,
+      publicId: uploaded.publicId,
+      mediaType: uploaded.mediaType,
+    };
+  }
+
+  if (content !== undefined) {
+    post.content = String(content).trim();
+  }
+
+  if (!post.content && !post.media?.url) {
+    throw ApiError.badRequest('Post cannot be empty without text or media');
+  }
+
+  await post.save();
+
+  const populated = await Post.findById(post._id)
+    .populate('author', AUTHOR_FIELDS)
+    .lean();
+
+  const isLiked = Boolean(await Like.exists({ user: userId, post: post._id }));
+  const result = { ...populated, isLiked };
+
+  emitPostUpdated(result);
+  return result;
+};
+
 export default {
   createPost,
+  updatePost,
   deletePost,
   getFeed,
   getUserPosts,

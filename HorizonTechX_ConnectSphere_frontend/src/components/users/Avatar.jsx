@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useState } from 'react';
 
 const sizeMap = {
   xs: 'w-6 h-6 text-xs',
@@ -44,7 +45,7 @@ export const Avatar = ({
   return (
     <div
       onClick={onClick}
-      className={`relative inline-flex flex-shrink-0 select-none ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`relative inline-flex flex-shrink-0 select-none rounded-full ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {src && !hasError ? (
         <img

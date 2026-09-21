@@ -4,8 +4,20 @@ import { getPagination } from '../utils/pagination.js';
 import postService from '../services/post.service.js';
 
 export const createPost = asyncHandler(async (req, res) => {
-  const post = await postService.createPost(req.user._id, req.body);
+  const post = await postService.createPost(req.user._id, req.body, req.file);
   new ApiResponse(201, 'Post created successfully', post).send(res);
+});
+
+export const updatePost = asyncHandler(async (req, res) => {
+  const removeMedia = req.body.removeMedia === 'true' || req.body.removeMedia === true;
+  const post = await postService.updatePost(
+    req.params.postId,
+    req.user._id,
+    req.body,
+    req.file,
+    removeMedia
+  );
+  new ApiResponse(200, 'Post updated successfully', post).send(res);
 });
 
 export const deletePost = asyncHandler(async (req, res) => {

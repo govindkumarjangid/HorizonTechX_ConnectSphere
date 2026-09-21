@@ -43,7 +43,7 @@ const userRepository = {
   },
 
   updateProfile(id, changes) {
-    return User.findByIdAndUpdate(id, { $set: changes }, { new: true, runValidators: true });
+    return User.findByIdAndUpdate(id, { $set: changes }, { returnDocument: 'after', runValidators: true });
   },
 
 
@@ -73,7 +73,7 @@ const userRepository = {
     return User.findOneAndUpdate(
       filter,
       { $inc: { [field]: amount } },
-      { new: true, projection: field }
+      { returnDocument: 'after', projection: field }
     ).lean();
   },
 

@@ -7,6 +7,11 @@ export const usernameParam = param('username')
   .withMessage('Username is required');
 
 export const updateProfileRules = [
+  body('fullName')
+    .optional()
+    .trim()
+    .isLength({ max: 60 })
+    .withMessage('Full name cannot exceed 60 characters'),
   body('username')
     .optional()
     .trim()

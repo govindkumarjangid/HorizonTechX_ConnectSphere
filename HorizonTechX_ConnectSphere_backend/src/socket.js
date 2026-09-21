@@ -58,3 +58,45 @@ export const emitNotification = (targetUserId, payload) => {
     createdAt: payload.createdAt || new Date().toISOString(),
   });
 };
+
+export const emitPostCreated = (post) => {
+  if (!io) return;
+  io.emit('post:new', post);
+};
+
+export const emitPostDeleted = (postId) => {
+  if (!io) return;
+  io.emit('post:deleted', { postId });
+};
+
+export const emitPostLikeUpdated = (postId, likesCount) => {
+  if (!io) return;
+  io.emit('post:like_updated', { postId, likesCount });
+};
+
+export const emitCommentAdded = (postId, comment, commentsCount) => {
+  if (!io) return;
+  io.emit('comment:new', { postId, comment, commentsCount });
+};
+
+export const emitCommentDeleted = (postId, commentId, commentsCount) => {
+  if (!io) return;
+  io.emit('comment:deleted', { postId, commentId, commentsCount });
+};
+
+export const emitFollowUpdated = (targetUserId, followersCount, followerId, followingCount) => {
+  if (!io) return;
+  io.emit('user:follow_updated', { targetUserId, followersCount, followerId, followingCount });
+};
+
+export const emitProfileUpdated = (user) => {
+  if (!io) return;
+  io.emit('user:profile_updated', user);
+};
+
+export const emitPostUpdated = (post) => {
+  if (!io) return;
+  io.emit('post:updated', post);
+};
+
+

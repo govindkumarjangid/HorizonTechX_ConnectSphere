@@ -1,69 +1,98 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './store/useThemeStore';
-import { AuthProvider } from './store/useAuthStore';
-import { UserProvider } from './store/useUserStore';
-import { PostProvider } from './store/usePostStore';
+import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
+import ProtectedRoute from './routes/ProtectedRoute';
+import Toast from './components/common/Toast';
+import Loader from './components/common/Loader';
 
 import Layout from './components/layout/Layout';
 import Feed from './pages/Feed';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
-// Code-split secondary routes for minimal initial bundle size & fast LCP
-const Explore = lazy(() => import('./pages/Explore'));
-const SearchPage = lazy(() => import('./pages/SearchPage'));
 const Profile = lazy(() => import('./pages/Profile'));
-const Connections = lazy(() => import('./pages/Connections'));
-const Messages = lazy(() => import('./pages/Messages'));
-const Notifications = lazy(() => import('./pages/Notifications'));
-const Communities = lazy(() => import('./pages/Communities'));
-const SavedPosts = lazy(() => import('./pages/SavedPosts'));
-const Settings = lazy(() => import('./pages/Settings'));
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
+import useAuthStore from './store/useAuthStore';
+
 const RouteFallback = () => (
-  <div className="w-full min-h-[300px] flex items-center justify-center">
-    <div className="w-7 h-7 rounded-full border-2 border-slate-200 dark:border-slate-800 border-t-blue-600 dark:border-t-blue-500 animate-spin" />
+  <div className="w-full min-h-[50vh] flex items-center justify-center">
+    <Loader size="lg" />
   </div>
 );
+
+const PublicRoute = ({ children }) => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader size="lg" />
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <Navigate to="/" replace /> : children;
+};
 
 export const App = () => {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <UserProvider>
-          <PostProvider>
-            <BrowserRouter>
-              <Suspense fallback={<RouteFallback />}>
-                <Routes>
-                  {/* Main App Layout */}
-                  <Route path="/" element={<Layout />}>
-                    <Route index element={<Feed />} />
-                    <Route path="feed" element={<Navigate to="/" replace />} />
-                    <Route path="explore" element={<Explore />} />
-                    <Route path="search" element={<SearchPage />} />
-                    <Route path="profile" element={<Profile />} />
-                    <Route path="profile/:username" element={<Profile />} />
-                    <Route path="connections" element={<Connections />} />
-                    <Route path="messages" element={<Messages />} />
-                    <Route path="notifications" element={<Notifications />} />
-                    <Route path="communities" element={<Communities />} />
-                    <Route path="saved" element={<SavedPosts />} />
-                    <Route path="settings" element={<Settings />} />
-                  </Route>
+        <SocketProvider>
+          <BrowserRouter>
+            <Toast />
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                {/* Public Authentication Pages */}
+                <Route
+                  path="/login"
+                  element={
+                    <PublicRoute>
+                      <Login />
+                    </PublicRoute>
+                  }
+                />
+                <Route
+                  path="/register"
+                  element={
+                    <PublicRoute>
+                      <Register />
+                    </PublicRoute>
+                  }
+                />
 
-                  {/* Authentication Pages */}
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
+                {/* Protected App Routes */}
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <Layout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Feed />} />
+                  <Route path="feed" element={<Navigate to="/" replace />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="profile/:username" element={<Profile />} />
+                </Route>
 
-                  {/* 404 Catch-all */}
-                  <Route path="*" element={<Layout><NotFound /></Layout>} />
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </PostProvider>
-        </UserProvider>
+                {/* 404 Catch-all */}
+                <Route
+                  path="*"
+                  element={
+                    <Layout hideSidebars>
+                      <NotFound />
+                    </Layout>
+                  }
+                />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </SocketProvider>
       </AuthProvider>
     </ThemeProvider>
   );

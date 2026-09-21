@@ -25,8 +25,9 @@ export const LikeButton = ({ isLiked, likesCount, onToggle }) => {
           }`}
         />
       </motion.div>
-      <span className={isLiked ? 'text-rose-600 dark:text-rose-400 font-semibold' : ''}>
-        {likesCount || 0}
+      {/* Always show the count, even when 0 — only color it red when actually liked */}
+      <span className={isLiked ? 'text-rose-600 dark:text-rose-400 font-semibold' : 'text-slate-600 dark:text-slate-400'}>
+        {typeof likesCount === 'number' ? likesCount : 0}
       </span>
     </button>
   );

@@ -1,6 +1,6 @@
 import ApiError from '../utils/ApiError.js';
 import { Follow, User } from '../models/index.js';
-import { emitNotification } from '../socket.js';
+import { emitNotification, emitFollowUpdated } from '../socket.js';
 
 const USER_FIELDS = 'username bio avatar followersCount followingCount';
 
@@ -26,18 +26,26 @@ const follow = async (currentUser, targetUserId) => {
     following: targetUserId,
   });
 
-  const [updatedTarget] = await Promise.all([
+  const [updatedTarget, updatedCurrent] = await Promise.all([
     User.findByIdAndUpdate(
       targetUserId,
       { $inc: { followersCount: 1 } },
-      { new: true }
+      { returnDocument: 'after' }
     ),
     User.findByIdAndUpdate(
       currentUser._id,
       { $inc: { followingCount: 1 } },
-      { new: true }
+      { returnDocument: 'after' }
     ),
   ]);
+
+  // Broadcast real-time follow stats update
+  emitFollowUpdated(
+    targetUserId,
+    updatedTarget.followersCount,
+    currentUser._id,
+    updatedCurrent.followingCount
+  );
 
   // Trigger real-time notification to target user
   emitNotification(targetUserId, {
@@ -66,22 +74,28 @@ const unfollow = async (currentUserId, targetUserId) => {
     throw ApiError.badRequest('You are not following this user');
   }
 
-  const [updatedTarget] = await Promise.all([
+  const [updatedTarget, updatedCurrent] = await Promise.all([
     User.findByIdAndUpdate(
       targetUserId,
       { $inc: { followersCount: -1 } },
-      { new: true }
+      { returnDocument: 'after' }
     ),
     User.findByIdAndUpdate(
       currentUserId,
       { $inc: { followingCount: -1 } },
-      { new: true }
+      { returnDocument: 'after' }
     ),
   ]);
 
+  const finalFollowers = Math.max(0, updatedTarget?.followersCount || 0);
+  const finalFollowing = Math.max(0, updatedCurrent?.followingCount || 0);
+
+  // Broadcast real-time unfollow stats update
+  emitFollowUpdated(targetUserId, finalFollowers, currentUserId, finalFollowing);
+
   return {
     isFollowing: false,
-    followersCount: Math.max(0, updatedTarget?.followersCount || 0),
+    followersCount: finalFollowers,
   };
 };
 

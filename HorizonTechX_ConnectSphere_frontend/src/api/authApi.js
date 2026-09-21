@@ -5,6 +5,8 @@ export const authApi = {
   register: (data) => api.post('/auth/register', data),
   logout: () => api.post('/auth/logout'),
   getCurrentUser: () => api.get('/auth/me'),
+  getMe: () => api.get('/auth/me'),
 };
 
 export default authApi;
+

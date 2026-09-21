@@ -4,6 +4,12 @@ import { SALT_ROUNDS } from '../constents.js';
 
 const userSchema = new mongoose.Schema(
   {
+    fullName: {
+      type: String,
+      trim: true,
+      maxlength: [60, 'Full name cannot exceed 60 characters'],
+      default: '',
+    },
     username: {
       type: String,
       required: [true, 'Username is required'],
@@ -16,6 +22,14 @@ const userSchema = new mongoose.Schema(
         /^[a-z0-9_.]+$/,
         'Username can only contain letters, numbers, underscore and dot',
       ],
+    },
+    email: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      default: null,
+      sparse: true,
+      index: true,
     },
     passwordHash: {
       type: String,

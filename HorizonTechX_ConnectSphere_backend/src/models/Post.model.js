@@ -10,9 +10,14 @@ const postSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: [true, 'Post content cannot be empty'],
       trim: true,
       maxlength: [2000, 'Post cannot exceed 2000 characters'],
+      default: '',
+    },
+    media: {
+      url: { type: String, default: null },
+      publicId: { type: String, default: null },
+      mediaType: { type: String, enum: ['image', 'video', null], default: null },
     },
     likesCount: { type: Number, default: 0, min: 0 },
     commentsCount: { type: Number, default: 0, min: 0 },

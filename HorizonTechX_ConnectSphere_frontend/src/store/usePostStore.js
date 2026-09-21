@@ -1,230 +1,239 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { mockPosts } from '../utils/mockData';
+import { create } from 'zustand';
+import postApi from '../api/postApi';
+import useToastStore from './useToastStore';
 
-const PostContext = createContext(null);
+export const usePostStore = create((set, get) => ({
+  posts: [],
+  isLoading: false,
+  isLoadingMore: false,
+  isCreating: false,
+  isUpdating: false,
+  hasMore: false,
+  page: 1,
+  error: null,
 
-export const PostProvider = ({ children }) => {
-  const [posts, setPosts] = useState(() => {
+  fetchFeed: async (pageNum = 1) => {
+    if (pageNum === 1) {
+      set({ isLoading: true, error: null });
+    } else {
+      set({ isLoadingMore: true, error: null });
+    }
+
     try {
-      const saved = localStorage.getItem('cs_posts');
-      if (saved) return JSON.parse(saved);
-    } catch (_e) {
-      // ignore JSON parse error
-    }
-    return mockPosts;
-  });
-
-  const [activeTab, setActiveTab] = useState('trending');
-  const [sortBy, setSortBy] = useState('top');
-  const [toastMessage, setToastMessage] = useState(null);
-  const toastTimeoutRef = useRef(null);
-
-  // Non-blocking deferred persistence to prevent frame drops
-  const persistTimeoutRef = useRef(null);
-  const scheduleSave = useCallback((newPosts) => {
-    if (persistTimeoutRef.current) {
-      clearTimeout(persistTimeoutRef.current);
-    }
-    persistTimeoutRef.current = setTimeout(() => {
-      try {
-        localStorage.setItem('cs_posts', JSON.stringify(newPosts));
-      } catch (_e) {
-        // ignore quota errors
+      const res = await postApi.getFeed({ page: pageNum, limit: 10 });
+      const data = res.data?.data;
+      if (data) {
+        set({
+          posts: pageNum === 1 ? data.items || [] : [...get().posts, ...(data.items || [])],
+          hasMore: Boolean(data.pagination?.hasMore),
+          page: pageNum,
+          isLoading: false,
+          isLoadingMore: false,
+        });
       }
-    }, 120);
-  }, []);
-
-  const showToast = useCallback((message) => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to load feed';
+      set({ error: msg, isLoading: false, isLoadingMore: false });
+      if (pageNum > 1) {
+        useToastStore.getState().error(msg);
+      }
     }
-    setToastMessage(message);
-    toastTimeoutRef.current = setTimeout(() => {
-      setToastMessage(null);
-    }, 3000);
-  }, []);
+  },
 
-  useEffect(() => {
-    return () => {
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      if (persistTimeoutRef.current) clearTimeout(persistTimeoutRef.current);
-    };
-  }, []);
+  loadMoreFeed: async () => {
+    const { page, hasMore, isLoadingMore } = get();
+    if (!hasMore || isLoadingMore) return;
+    await get().fetchFeed(page + 1);
+  },
 
-  const createPost = useCallback((newPostData) => {
-    const newPost = {
-      id: `post_${Date.now()}`,
-      author: newPostData.author,
-      content: newPostData.content,
-      images: newPostData.images || [],
-      video: newPostData.video || null,
-      visibility: newPostData.visibility || 'public',
-      timestamp: 'Just now',
-      createdAt: new Date().toISOString(),
-      likesCount: 0,
-      isLiked: false,
-      commentsCount: 0,
-      sharesCount: 0,
-      isBookmarked: false,
-      comments: [],
-    };
-    setPosts((prev) => {
-      const updated = [newPost, ...prev];
-      scheduleSave(updated);
-      return updated;
-    });
-    showToast('Your post has been published.');
-    return newPost;
-  }, [scheduleSave, showToast]);
+  createPost: async (postData) => {
+    try {
+      set({ isCreating: true });
+      const res = await postApi.createPost(postData);
+      const newPost = res.data?.data || res.data;
 
-  const toggleLike = useCallback((postId) => {
-    setPosts((prev) => {
-      const updated = prev.map((post) => {
-        if (post.id === postId) {
-          const isLiked = !post.isLiked;
+      set((state) => ({
+        posts: [newPost, ...state.posts],
+        isCreating: false,
+      }));
+
+      useToastStore.getState().success('Post published successfully!');
+      return { success: true, post: newPost };
+    } catch (err) {
+      set({ isCreating: false });
+      const msg = err.response?.data?.message || 'Failed to publish post';
+      useToastStore.getState().error(msg);
+      return { success: false, error: msg };
+    }
+  },
+
+  updatePost: async (postId, postData) => {
+    try {
+      set({ isUpdating: true });
+      const res = await postApi.updatePost(postId, postData);
+      const updatedPost = res.data?.data || res.data;
+
+      set((state) => ({
+        posts: state.posts.map((p) =>
+          p._id === postId ? { ...p, ...updatedPost, isLiked: p.isLiked } : p
+        ),
+        isUpdating: false,
+      }));
+
+      useToastStore.getState().success('Post updated successfully!');
+      return { success: true, post: updatedPost };
+    } catch (err) {
+      set({ isUpdating: false });
+      const firstError = err.response?.data?.errors?.[0];
+      const msg =
+        (typeof firstError === 'string' ? firstError : firstError?.message) ||
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to update post';
+      useToastStore.getState().error(msg);
+      return { success: false, error: msg };
+    }
+  },
+
+  deletePost: async (postId) => {
+    const previousPosts = get().posts;
+    // Optimistic removal
+    set({ posts: previousPosts.filter((p) => p._id !== postId) });
+
+    try {
+      await postApi.deletePost(postId);
+      useToastStore.getState().success('Post deleted successfully');
+      return { success: true };
+    } catch (err) {
+      // Rollback
+      set({ posts: previousPosts });
+      const msg = err.response?.data?.message || 'Failed to delete post';
+      useToastStore.getState().error(msg);
+      return { success: false, error: msg };
+    }
+  },
+
+  toggleLike: async (postId) => {
+    // Optimistic update
+    set((state) => ({
+      posts: state.posts.map((p) => {
+        if (p._id !== postId) return p;
+        const willLike = !p.isLiked;
+        return {
+          ...p,
+          isLiked: willLike,
+          likesCount: Math.max(0, (p.likesCount || 0) + (willLike ? 1 : -1)),
+        };
+      }),
+    }));
+
+    try {
+      const res = await postApi.toggleLike(postId);
+      const data = res.data?.data;
+      if (data) {
+        set((state) => ({
+          posts: state.posts.map((p) =>
+            p._id === postId ? { ...p, isLiked: data.isLiked, likesCount: data.likesCount } : p
+          ),
+        }));
+      }
+    } catch (_err) {
+      // Revert on error
+      set((state) => ({
+        posts: state.posts.map((p) => {
+          if (p._id !== postId) return p;
+          const revertLike = !p.isLiked;
           return {
-            ...post,
-            isLiked,
-            likesCount: isLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1),
+            ...p,
+            isLiked: revertLike,
+            likesCount: Math.max(0, (p.likesCount || 0) + (revertLike ? 1 : -1)),
+          };
+        }),
+      }));
+      useToastStore.getState().error('Could not update like status');
+    }
+  },
+
+  incrementCommentCount: (postId) => {
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p._id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p
+      ),
+    }));
+  },
+
+  decrementCommentCount: (postId) => {
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p._id === postId ? { ...p, commentsCount: Math.max(0, (p.commentsCount || 0) - 1) } : p
+      ),
+    }));
+  },
+
+  // Socket real-time handlers
+  handleSocketNewPost: (newPost) => {
+    if (!newPost?._id) return;
+    set((state) => {
+      if (state.posts.some((p) => p._id === newPost._id)) return state;
+      return { posts: [newPost, ...state.posts] };
+    });
+  },
+
+  handleSocketDeletePost: (postId) => {
+    if (!postId) return;
+    set((state) => ({
+      posts: state.posts.filter((p) => p._id !== postId),
+    }));
+  },
+
+  handleSocketLikeUpdate: (postId, likesCount) => {
+    if (!postId) return;
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p._id === postId ? { ...p, likesCount } : p
+      ),
+    }));
+  },
+
+  handleSocketCommentCount: (postId, commentsCount) => {
+    if (!postId) return;
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p._id === postId ? { ...p, commentsCount } : p
+      ),
+    }));
+  },
+
+  handleSocketUpdatePost: (updatedPost) => {
+    if (!updatedPost?._id) return;
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p._id === updatedPost._id
+          ? { ...p, ...updatedPost, isLiked: p.isLiked }
+          : p
+      ),
+    }));
+  },
+
+  handleSocketAuthorUpdate: (updatedUser) => {
+    if (!updatedUser?._id) return;
+    set((state) => ({
+      posts: state.posts.map((p) => {
+        if (p.author?._id === updatedUser._id || p.author?.username === updatedUser.username) {
+          return {
+            ...p,
+            author: {
+              ...p.author,
+              avatar: updatedUser.avatar,
+              fullName: updatedUser.fullName,
+              username: updatedUser.username,
+            },
           };
         }
-        return post;
-      });
-      scheduleSave(updated);
-      return updated;
-    });
-  }, [scheduleSave]);
-
-  const toggleBookmark = useCallback((postId) => {
-    let stateMessage = '';
-    setPosts((prev) => {
-      const updated = prev.map((post) => {
-        if (post.id === postId) {
-          const isBookmarked = !post.isBookmarked;
-          stateMessage = isBookmarked ? 'Saved to bookmarks' : 'Removed from bookmarks';
-          return {
-            ...post,
-            isBookmarked,
-          };
-        }
-        return post;
-      });
-      scheduleSave(updated);
-      return updated;
-    });
-    if (stateMessage) showToast(stateMessage);
-  }, [scheduleSave, showToast]);
-
-  const deletePost = useCallback((postId) => {
-    setPosts((prev) => {
-      const updated = prev.filter((p) => p.id !== postId);
-      scheduleSave(updated);
-      return updated;
-    });
-    showToast('Post deleted.');
-  }, [scheduleSave, showToast]);
-
-  const addComment = useCallback((postId, user, text) => {
-    if (!text || !text.trim()) return;
-    const newComment = {
-      id: `c_${Date.now()}`,
-      author: {
-        fullName: user.fullName,
-        username: user.username,
-        avatar: user.avatar,
-      },
-      text: text.trim(),
-      timestamp: 'Just now',
-      likesCount: 0,
-      isLiked: false,
-    };
-
-    setPosts((prev) => {
-      const updated = prev.map((post) => {
-        if (post.id === postId) {
-          const comments = [...(post.comments || []), newComment];
-          return {
-            ...post,
-            comments,
-            commentsCount: (post.commentsCount || 0) + 1,
-          };
-        }
-        return post;
-      });
-      scheduleSave(updated);
-      return updated;
-    });
-    showToast('Comment added');
-  }, [scheduleSave, showToast]);
-
-  const toggleCommentLike = useCallback((postId, commentId) => {
-    setPosts((prev) => {
-      const updated = prev.map((post) => {
-        if (post.id === postId) {
-          const comments = (post.comments || []).map((c) => {
-            if (c.id === commentId) {
-              const isLiked = !c.isLiked;
-              return {
-                ...c,
-                isLiked,
-                likesCount: isLiked ? (c.likesCount || 0) + 1 : Math.max(0, (c.likesCount || 0) - 1),
-              };
-            }
-            return c;
-          });
-          return { ...post, comments };
-        }
-        return post;
-      });
-      scheduleSave(updated);
-      return updated;
-    });
-  }, [scheduleSave]);
-
-  const contextValue = useMemo(
-    () => ({
-      posts,
-      activeTab,
-      setActiveTab,
-      sortBy,
-      setSortBy,
-      createPost,
-      toggleLike,
-      toggleBookmark,
-      deletePost,
-      addComment,
-      toggleCommentLike,
-      toastMessage,
-      showToast,
-    }),
-    [
-      posts,
-      activeTab,
-      sortBy,
-      createPost,
-      toggleLike,
-      toggleBookmark,
-      deletePost,
-      addComment,
-      toggleCommentLike,
-      toastMessage,
-      showToast,
-    ]
-  );
-
-  return React.createElement(
-    PostContext.Provider,
-    { value: contextValue },
-    children
-  );
-};
-
-export const usePostStore = () => {
-  const context = useContext(PostContext);
-  if (!context) {
-    throw new Error('usePostStore must be used within a PostProvider');
-  }
-  return context;
-};
+        return p;
+      }),
+    }));
+  },
+}));
 
 export default usePostStore;

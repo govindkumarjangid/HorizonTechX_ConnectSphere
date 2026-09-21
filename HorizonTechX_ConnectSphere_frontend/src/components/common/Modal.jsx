@@ -27,32 +27,41 @@ export const Modal = ({
   }, [isOpen, onClose]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+        <motion.div
+          key="modal-root"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+        >
           {/* Backdrop */}
           <motion.div
+            key="modal-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.18 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/65 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-black/65 backdrop-blur-xs"
             aria-hidden="true"
           />
 
-          {/* Dialog Card / Mobile Bottom Sheet */}
+          {/* Dialog Card */}
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.98 }}
+            key="modal-card"
+            initial={{ opacity: 0, y: 24, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.98 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
+            exit={{ opacity: 0, y: 24, scale: 0.94 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 380 }}
             className={`relative w-full ${maxWidth} max-h-[90dvh] sm:max-h-[85vh] flex flex-col bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden z-10 pb-safe sm:pb-0`}
             role="dialog"
             aria-modal="true"
           >
             {/* Mobile Grab Handle */}
-            <div className="pt-2 sm:hidden flex justify-center">
+            <div className="pt-2 sm:hidden flex justify-center flex-shrink-0">
               <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
             </div>
 
@@ -76,7 +85,7 @@ export const Modal = ({
 
             <div className="p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

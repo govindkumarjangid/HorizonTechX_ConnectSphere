@@ -1,18 +1,31 @@
 import multer from 'multer';
 import ApiError from '../utils/ApiError.js';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_MEDIA_SIZE = 50 * 1024 * 1024; // 50 MB
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
 
-// files stay in memory and go straight to Cloudinary, nothing is written to disk
-const upload = multer({
+// Files stay in memory and are uploaded directly to Cloudinary
+const avatarUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE, files: 1 },
+  limits: { fileSize: MAX_IMAGE_SIZE, files: 1 },
   fileFilter: (_req, file, cb) => {
-    if (ALLOWED_TYPES.includes(file.mimetype)) return cb(null, true);
-    cb(ApiError.badRequest('Only JPG, PNG and WEBP images are allowed'));
+    if (ALLOWED_IMAGE_TYPES.includes(file.mimetype)) return cb(null, true);
+    cb(ApiError.badRequest('Only JPG, PNG, and WEBP images are allowed for avatars'));
   },
 });
 
-export const uploadAvatar = upload.single('avatar');
-export const uploadPostImage = upload.single('image');
+const mediaUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_MEDIA_SIZE, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    if ([...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES].includes(file.mimetype)) {
+      return cb(null, true);
+    }
+    cb(ApiError.badRequest('Only images (JPG, PNG, WEBP) and videos (MP4, WEBM, MOV) are allowed'));
+  },
+});
+
+export const uploadAvatar = avatarUpload.single('avatar');
+export const uploadMedia = mediaUpload.single('media');

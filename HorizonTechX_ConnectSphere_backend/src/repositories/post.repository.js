@@ -24,7 +24,7 @@ const postRepository = {
 
   updateContent(id, content) {
     return withAuthor(
-      Post.findByIdAndUpdate(id, { $set: { content } }, { new: true, runValidators: true })
+      Post.findByIdAndUpdate(id, { $set: { content } }, { returnDocument: 'after', runValidators: true })
     );
   },
 
@@ -45,7 +45,7 @@ const postRepository = {
     return Post.findOneAndUpdate(
       { _id: postId, likes: { $ne: userId } },
       { $addToSet: { likes: userId }, $inc: { likesCount: 1 } },
-      { new: true, projection: 'likesCount' }
+      { returnDocument: 'after', projection: 'likesCount' }
     ).lean();
   },
 
@@ -53,7 +53,7 @@ const postRepository = {
     return Post.findOneAndUpdate(
       { _id: postId, likes: userId },
       { $pull: { likes: userId }, $inc: { likesCount: -1 } },
-      { new: true, projection: 'likesCount' }
+      { returnDocument: 'after', projection: 'likesCount' }
     ).lean();
   },
 

@@ -1,6 +1,6 @@
 import ApiError from '../utils/ApiError.js';
 import { Comment, Post } from '../models/index.js';
-import { emitNotification } from '../socket.js';
+import { emitNotification, emitCommentAdded, emitCommentDeleted } from '../socket.js';
 
 const AUTHOR_FIELDS = 'username avatar';
 
@@ -17,11 +17,18 @@ const addComment = async (postId, currentUser, { text }) => {
     text: trimmed,
   });
 
-  await Post.findByIdAndUpdate(postId, { $inc: { commentsCount: 1 } });
+  const updatedPost = await Post.findByIdAndUpdate(
+    postId,
+    { $inc: { commentsCount: 1 } },
+    { returnDocument: 'after' }
+  );
 
   const populated = await Comment.findById(comment._id)
     .populate('author', AUTHOR_FIELDS)
     .lean();
+
+  // Broadcast real-time comment and updated count
+  emitCommentAdded(postId, populated, updatedPost?.commentsCount || 0);
 
   // Trigger real-time notification to post author
   emitNotification(post.author, {
@@ -78,7 +85,13 @@ const deleteComment = async (postId, commentId, userId) => {
   }
 
   await Comment.findByIdAndDelete(commentId);
-  await Post.findByIdAndUpdate(postId, { $inc: { commentsCount: -1 } });
+  const updatedPost = await Post.findByIdAndUpdate(
+    postId,
+    { $inc: { commentsCount: -1 } },
+    { returnDocument: 'after' }
+  );
+
+  emitCommentDeleted(postId, commentId, Math.max(0, updatedPost?.commentsCount || 0));
 };
 
 export default {

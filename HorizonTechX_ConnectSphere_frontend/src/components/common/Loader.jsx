@@ -1,19 +1,37 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 
-export const Loader = ({ size = 'md', className = '' }) => {
+export const Loader = ({ size = 'md', className = '', text = '', fullPage = false }) => {
   const sizeMap = {
-    sm: 'w-4 h-4 border-2',
-    md: 'w-6 h-6 border-2',
-    lg: 'w-8 h-8 border-3',
+    xs: 'w-3.5 h-3.5',
+    sm: 'w-4 h-4',
+    md: 'w-6 h-6',
+    lg: 'w-8 h-8',
+    xl: 'w-12 h-12',
   };
 
-  return (
-    <div className={`flex items-center justify-center p-4 ${className}`}>
-      <div
-        className={`${sizeMap[size] || sizeMap.md} border-slate-300 dark:border-slate-700 border-t-blue-600 rounded-full animate-spin`}
-      />
-    </div>
-  );
+  const iconClass = `${sizeMap[size] || sizeMap.md} animate-spin ${className || 'text-blue-600 dark:text-blue-400'}`;
+  const icon = <Loader2 className={iconClass} />;
+
+  if (fullPage) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 p-6">
+        {icon}
+        {text && <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{text}</p>}
+      </div>
+    );
+  }
+
+  if (text) {
+    return (
+      <div className="inline-flex items-center gap-2">
+        {icon}
+        <span className="text-xs text-slate-500 dark:text-slate-400">{text}</span>
+      </div>
+    );
+  }
+
+  return icon;
 };
 
 export const PostSkeleton = () => {
@@ -30,7 +48,7 @@ export const PostSkeleton = () => {
         <div className="w-full h-3 bg-slate-200 dark:bg-slate-800 rounded-md" />
         <div className="w-4/5 h-3 bg-slate-200 dark:bg-slate-800 rounded-md" />
       </div>
-      <div className="w-full h-56 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+      <div className="w-full h-44 bg-slate-200 dark:bg-slate-800 rounded-xl" />
       <div className="flex justify-between pt-2">
         <div className="w-16 h-4 bg-slate-200 dark:bg-slate-800 rounded-md" />
         <div className="w-16 h-4 bg-slate-200 dark:bg-slate-800 rounded-md" />
@@ -43,9 +61,9 @@ export const PostSkeleton = () => {
 export const ProfileSkeleton = () => {
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden mb-6 animate-pulse">
-      <div className="w-full h-44 bg-slate-200 dark:bg-slate-800" />
+      <div className="w-full h-36 bg-slate-200 dark:bg-slate-800" />
       <div className="px-6 pb-6 pt-0 relative">
-        <div className="-mt-14 mb-4">
+        <div className="-mt-12 mb-4">
           <div className="w-24 h-24 rounded-full bg-slate-300 dark:bg-slate-700 ring-4 ring-white dark:ring-slate-900" />
         </div>
         <div className="space-y-3">
