@@ -98,10 +98,15 @@ const getFeed = async (userId, { skip = 0, limit = 10 }) => {
     ).map(String)
   );
 
-  const items = posts.map((post) => ({
-    ...post,
-    isLiked: likedPostIds.has(String(post._id)),
-  }));
+  const items = posts.map((post) => {
+    const likesCount = Math.max(0, Number(post.likesCount) || 0);
+    const isLiked = likesCount > 0 && likedPostIds.has(String(post._id));
+    return {
+      ...post,
+      likesCount,
+      isLiked,
+    };
+  });
 
   return {
     items,
@@ -135,10 +140,15 @@ const getUserPosts = async (username, currentUserId, { skip = 0, limit = 10 }) =
     ).map(String)
   );
 
-  const items = posts.map((post) => ({
-    ...post,
-    isLiked: likedPostIds.has(String(post._id)),
-  }));
+  const items = posts.map((post) => {
+    const likesCount = Math.max(0, Number(post.likesCount) || 0);
+    const isLiked = likesCount > 0 && likedPostIds.has(String(post._id));
+    return {
+      ...post,
+      likesCount,
+      isLiked,
+    };
+  });
 
   return {
     items,

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import postApi from '../api/postApi';
 import useToastStore from './useToastStore';
+import useUserStore from './useUserStore';
 
 export const usePostStore = create((set, get) => ({
   posts: [],
@@ -114,15 +115,30 @@ export const usePostStore = create((set, get) => ({
   },
 
   toggleLike: async (postId) => {
-    // Optimistic update
+    // Optimistic update in usePostStore
     set((state) => ({
       posts: state.posts.map((p) => {
         if (p._id !== postId) return p;
         const willLike = !p.isLiked;
+        const newCount = Math.max(0, (p.likesCount || 0) + (willLike ? 1 : -1));
         return {
           ...p,
-          isLiked: willLike,
-          likesCount: Math.max(0, (p.likesCount || 0) + (willLike ? 1 : -1)),
+          isLiked: newCount > 0 && willLike,
+          likesCount: newCount,
+        };
+      }),
+    }));
+
+    // Optimistic update in useUserStore
+    useUserStore.setState((state) => ({
+      userPosts: state.userPosts.map((p) => {
+        if (p._id !== postId) return p;
+        const willLike = !p.isLiked;
+        const newCount = Math.max(0, (p.likesCount || 0) + (willLike ? 1 : -1));
+        return {
+          ...p,
+          isLiked: newCount > 0 && willLike,
+          likesCount: newCount,
         };
       }),
     }));
@@ -131,22 +147,42 @@ export const usePostStore = create((set, get) => ({
       const res = await postApi.toggleLike(postId);
       const data = res.data?.data;
       if (data) {
+        const finalCount = Math.max(0, Number(data.likesCount) || 0);
+        const finalIsLiked = finalCount > 0 && Boolean(data.isLiked);
         set((state) => ({
           posts: state.posts.map((p) =>
-            p._id === postId ? { ...p, isLiked: data.isLiked, likesCount: data.likesCount } : p
+            p._id === postId ? { ...p, isLiked: finalIsLiked, likesCount: finalCount } : p
+          ),
+        }));
+        useUserStore.setState((state) => ({
+          userPosts: state.userPosts.map((p) =>
+            p._id === postId ? { ...p, isLiked: finalIsLiked, likesCount: finalCount } : p
           ),
         }));
       }
     } catch (_err) {
-      // Revert on error
+      // Revert on error in both stores
       set((state) => ({
         posts: state.posts.map((p) => {
           if (p._id !== postId) return p;
           const revertLike = !p.isLiked;
+          const revertCount = Math.max(0, (p.likesCount || 0) + (revertLike ? 1 : -1));
           return {
             ...p,
-            isLiked: revertLike,
-            likesCount: Math.max(0, (p.likesCount || 0) + (revertLike ? 1 : -1)),
+            isLiked: revertCount > 0 && revertLike,
+            likesCount: revertCount,
+          };
+        }),
+      }));
+      useUserStore.setState((state) => ({
+        userPosts: state.userPosts.map((p) => {
+          if (p._id !== postId) return p;
+          const revertLike = !p.isLiked;
+          const revertCount = Math.max(0, (p.likesCount || 0) + (revertLike ? 1 : -1));
+          return {
+            ...p,
+            isLiked: revertCount > 0 && revertLike,
+            likesCount: revertCount,
           };
         }),
       }));
@@ -188,10 +224,16 @@ export const usePostStore = create((set, get) => ({
 
   handleSocketLikeUpdate: (postId, likesCount) => {
     if (!postId) return;
+    const finalCount = Math.max(0, Number(likesCount) || 0);
     set((state) => ({
-      posts: state.posts.map((p) =>
-        p._id === postId ? { ...p, likesCount } : p
-      ),
+      posts: state.posts.map((p) => {
+        if (p._id !== postId) return p;
+        return {
+          ...p,
+          likesCount: finalCount,
+          isLiked: finalCount === 0 ? false : p.isLiked,
+        };
+      }),
     }));
   },
 

@@ -19,11 +19,17 @@ export default defineConfig({
             if (id.includes('framer-motion') || id.includes('lenis')) {
               return 'vendor-motion';
             }
-            if (id.includes('swiper')) {
-              return 'vendor-swiper';
-            }
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
+            }
+            if (id.includes('socket.io-client')) {
+              return 'vendor-socket';
+            }
+            if (id.includes('axios')) {
+              return 'vendor-axios';
+            }
+            if (id.includes('zustand')) {
+              return 'vendor-state';
             }
             return 'vendor';
           }

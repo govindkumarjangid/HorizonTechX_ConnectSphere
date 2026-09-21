@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { MoreHorizontal, MessageCircle, Trash2, Edit3 } from 'lucide-react';
 import Avatar from '../users/Avatar';
 import LikeButton from './LikeButton';
-import CommentList from '../comments/CommentList';
-import ConfirmModal from '../common/ConfirmModal';
-import EditPostModal from './EditPostModal';
 import FormattedText from './FormattedText';
 import ErrorBoundary from '../common/ErrorBoundary';
+import Loader from '../common/Loader';
+
+const CommentList = lazy(() => import('../comments/CommentList'));
+const ConfirmModal = lazy(() => import('../common/ConfirmModal'));
+const EditPostModal = lazy(() => import('./EditPostModal'));
 import { formatRelativeTime } from '../../utils/formatDate';
 import useAuthStore from '../../store/useAuthStore';
 import usePostStore from '../../store/usePostStore';
@@ -163,32 +165,43 @@ const PostCardComponent = ({ post, onDelete }) => {
       {showComments && (
         <div className="mt-3">
           <ErrorBoundary>
-            <CommentList
-              postId={post._id}
-              postAuthorId={post.author?._id}
-            />
+            <Suspense
+              fallback={
+                <div className="flex justify-center py-4">
+                  <Loader size="sm" />
+                </div>
+              }
+            >
+              <CommentList
+                postId={post._id}
+                postAuthorId={post.author?._id}
+              />
+            </Suspense>
           </ErrorBoundary>
         </div>
       )}
 
-      {/* Edit Post Modal */}
-      {isAuthor && (
-        <EditPostModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          post={post}
-        />
-      )}
+      {/* Lazy-loaded Modals */}
+      <Suspense fallback={null}>
+        {isAuthor && isEditModalOpen && (
+          <EditPostModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            post={post}
+          />
+        )}
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleDelete}
-        title="Delete Post"
-        message="Are you sure you want to delete this post? This action cannot be undone."
-        confirmText={isDeleting ? 'Deleting...' : 'Delete'}
-      />
+        {isDeleteModalOpen && (
+          <ConfirmModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onConfirm={handleDelete}
+            title="Delete Post"
+            message="Are you sure you want to delete this post? This action cannot be undone."
+            confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+          />
+        )}
+      </Suspense>
     </article>
   );
 };

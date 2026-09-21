@@ -45,19 +45,19 @@ export const Avatar = ({
   return (
     <div
       onClick={onClick}
-      className={`relative inline-flex flex-shrink-0 select-none rounded-full ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`relative inline-flex items-center justify-center flex-shrink-0 select-none rounded-full ${sizeClasses} ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {src && !hasError ? (
         <img
           src={src}
           alt={alt}
           onError={() => setHasError(true)}
-          className={`${sizeClasses} rounded-full object-cover ring-1 ring-black/5 dark:ring-white/10 transition duration-200 hover:opacity-95`}
+          className="w-full h-full rounded-full object-cover ring-1 ring-black/5 dark:ring-white/10 transition duration-200 hover:opacity-95"
           loading="lazy"
         />
       ) : (
         <div
-          className={`${sizeClasses} rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center font-medium ring-1 ring-black/5 dark:ring-white/10`}
+          className="w-full h-full rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center font-medium ring-1 ring-black/5 dark:ring-white/10"
         >
           {initials}
         </div>

@@ -46,7 +46,7 @@ export const Layout = ({ children, hideSidebars = false }) => {
         onClose={() => setIsMobileComposeOpen(false)}
         title="Create a Post"
       >
-        <PostForm onPostCreated={() => setIsMobileComposeOpen(false)} />
+        <PostForm onPostCreated={() => setIsMobileComposeOpen(false)} isInsideModal={true} />
       </Modal>
     </div>
   );

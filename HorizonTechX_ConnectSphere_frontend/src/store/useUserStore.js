@@ -196,10 +196,16 @@ export const useUserStore = create((set, get) => ({
 
   handleSocketLikeUpdate: (postId, likesCount) => {
     if (!postId) return;
+    const finalCount = Math.max(0, Number(likesCount) || 0);
     set((state) => ({
-      userPosts: state.userPosts.map((p) =>
-        p._id === postId ? { ...p, likesCount } : p
-      ),
+      userPosts: state.userPosts.map((p) => {
+        if (p._id !== postId) return p;
+        return {
+          ...p,
+          likesCount: finalCount,
+          isLiked: finalCount === 0 ? false : p.isLiked,
+        };
+      }),
     }));
   },
 

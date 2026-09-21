@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FileText, RefreshCw } from 'lucide-react';
 import ProfileHeader from '../components/users/ProfileHeader';
 import PostCard from '../components/posts/PostCard';
-import EditProfile from './EditProfile';
-import FollowListModal from '../components/users/FollowListModal';
+
+const EditProfile = lazy(() => import('./EditProfile'));
+const FollowListModal = lazy(() => import('../components/users/FollowListModal'));
 import { ProfileSkeleton, PostSkeleton } from '../components/common/Loader';
 import EmptyState from '../components/common/EmptyState';
 import useAuthStore from '../store/useAuthStore';
@@ -114,28 +115,31 @@ export const Profile = () => {
         )}
       </div>
 
-      {/* Edit Profile Modal */}
-      {isCurrentUser && (
-        <EditProfile
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onProfileUpdated={(updatedUser) => {
-            if (updatedUser?.username && updatedUser.username.toLowerCase() !== (targetUsername || '').toLowerCase()) {
-              navigate(`/profile/${updatedUser.username}`, { replace: true });
-            } else if (targetUsername) {
-              fetchProfile(targetUsername);
-            }
-          }}
-        />
-      )}
+      {/* Lazy-loaded Modals */}
+      <Suspense fallback={null}>
+        {isCurrentUser && isEditModalOpen && (
+          <EditProfile
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onProfileUpdated={(updatedUser) => {
+              if (updatedUser?.username && updatedUser.username.toLowerCase() !== (targetUsername || '').toLowerCase()) {
+                navigate(`/profile/${updatedUser.username}`, { replace: true });
+              } else if (targetUsername) {
+                fetchProfile(targetUsername);
+              }
+            }}
+          />
+        )}
 
-      {/* Followers / Following Modal */}
-      <FollowListModal
-        isOpen={!!followModalType}
-        onClose={() => setFollowModalType(null)}
-        username={targetUsername}
-        type={followModalType || 'followers'}
-      />
+        {followModalType && (
+          <FollowListModal
+            isOpen={!!followModalType}
+            onClose={() => setFollowModalType(null)}
+            username={targetUsername}
+            type={followModalType || 'followers'}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };

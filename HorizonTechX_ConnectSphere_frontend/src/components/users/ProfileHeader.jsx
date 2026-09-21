@@ -20,17 +20,17 @@ export const ProfileHeader = ({
       {/* Main Profile Info */}
       <div className="px-4 sm:px-6 pb-5 relative">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-4 gap-3">
-          {/* Avatar overlapping banner — tightly circular, border hugs the image */}
+          {/* Avatar overlapping banner — tightly circular, border directly hugs the image */}
           <div className="-mt-12 sm:-mt-14 relative z-10 flex-shrink-0">
-            <div className="rounded-full border-4 border-white dark:border-slate-900 shadow-md w-20 h-20 sm:w-24 sm:h-24 overflow-hidden flex items-center justify-center bg-slate-200 dark:bg-slate-700">
-              {user?.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={user?.username}
-                  className="w-full h-full object-cover rounded-full"
-                  loading="lazy"
-                />
-              ) : (
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user?.username}
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-white dark:border-slate-900 shadow-md block"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white dark:border-slate-900 shadow-md bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
                 <span className="text-xl sm:text-2xl font-bold text-slate-600 dark:text-slate-300 select-none">
                   {(user?.fullName || user?.username || 'U')
                     .split(' ')
@@ -39,8 +39,8 @@ export const ProfileHeader = ({
                     .join('')
                     .toUpperCase()}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}

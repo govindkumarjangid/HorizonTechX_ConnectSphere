@@ -6,12 +6,11 @@ import { SocketProvider } from './context/SocketContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Toast from './components/common/Toast';
 import Loader from './components/common/Loader';
-
 import Layout from './components/layout/Layout';
-import Feed from './pages/Feed';
-import Login from './pages/Login';
-import Register from './pages/Register';
 
+const Feed = lazy(() => import('./pages/Feed'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
 const Profile = lazy(() => import('./pages/Profile'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
