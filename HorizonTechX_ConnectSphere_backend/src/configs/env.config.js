@@ -52,10 +52,10 @@ const env = {
   isDev: nodeEnv === 'development',
   port: getNumber('PORT', 5000),
   mongoUri: getString('MONGO_URI', { required: true }),
-  // CLIENT_URL can hold more than one origin, separated by commas
-  clientUrls: getString('CLIENT_URL', { fallback: 'http://localhost:5173' })
+  // CLIENT_URL can hold more than one origin, separated by commas (supports wildcards e.g. *.vercel.app)
+  clientUrls: getString('CLIENT_URL', { fallback: 'http://localhost:5173,https://*.vercel.app' })
     .split(',')
-    .map((url) => url.trim())
+    .map((url) => url.trim().replace(/\/+$/, ''))
     .filter(Boolean),
   jwt: {
     accessSecret,
@@ -80,5 +80,32 @@ Object.freeze(env.jwt);
 Object.freeze(env.cloudinary);
 Object.freeze(env.clientUrls);
 Object.freeze(env);
+
+export const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+
+  const normalized = origin.trim().replace(/\/+$/, '').toLowerCase();
+
+  return env.clientUrls.some((allowed) => {
+    const normAllowed = allowed.trim().replace(/\/+$/, '').toLowerCase();
+
+    if (normAllowed === normalized) return true;
+
+    if (normAllowed.includes('*')) {
+      const escaped = normAllowed.replace(/[.+?()[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+      return new RegExp(`^${escaped}$`, 'i').test(normalized);
+    }
+
+    if (normAllowed.includes('vercel.app')) {
+      try {
+        return new URL(normalized).hostname.endsWith('.vercel.app');
+      } catch {
+        return false;
+      }
+    }
+
+    return false;
+  });
+};
 
 export default env;

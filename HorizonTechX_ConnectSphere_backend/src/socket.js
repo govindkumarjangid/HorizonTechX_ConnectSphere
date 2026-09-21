@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import { verifyAccessToken } from './utils/generateToken.js';
-import env from './configs/env.config.js';
+import env, { isOriginAllowed } from './configs/env.config.js';
 
 let io = null;
 
@@ -8,7 +8,7 @@ export const initSocket = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
       origin(origin, callback) {
-        if (!origin || env.clientUrls.includes(origin)) return callback(null, true);
+        if (isOriginAllowed(origin)) return callback(null, true);
         callback(null, false);
       },
       credentials: true,

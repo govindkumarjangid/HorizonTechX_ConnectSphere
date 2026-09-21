@@ -4,6 +4,7 @@ import { connectDB, disconnectDB } from '../src/configs/db.config.js';
 import app from './app.js';
 import { SHUTDOWN_TIMEOUT_MS } from "./constents.js";
 import { initSocket } from './socket.js';
+import { startKeepAliveCron } from './services/cron.service.js';
 
 
 let server;
@@ -54,6 +55,7 @@ const start = async () => {
 
   server.listen(env.port, () => {
     console.log(`Server running in ${env.nodeEnv} mode on port ${env.port}...`);
+    startKeepAliveCron();
   });
 
   // Render/AWS load balancers keep connections open longer than Node's 5s default,

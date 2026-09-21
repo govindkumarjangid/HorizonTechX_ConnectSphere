@@ -6,8 +6,8 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 
-import env from '../src/configs/env.config.js';
-import { isDBConnected } from '../src/configs/db.config.js';
+import env, { isOriginAllowed } from './configs/env.config.js';
+import { isDBConnected } from './configs/db.config.js';
 import ApiResponse from './utils/ApiResponse.js';
 import sanitizeBody from './middlewares/sanitize.middleware.js';
 import { notFound, errorHandler } from './middlewares/error.middleware.js';
@@ -19,23 +19,40 @@ const app = express();
 
 if (env.isProd) app.set('trust proxy', 1);
 
-app.use(helmet());
-
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || env.clientUrls.includes(origin)) return callback(null, true);
+    if (isOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`[CORS] Rejected origin: "${origin}". Allowed origins configured:`, env.clientUrls);
     callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers',
+  ],
+  exposedHeaders: ['Set-Cookie', 'Authorization'],
   maxAge: 86400,
+  optionsSuccessStatus: 204,
 };
 
-// Handle preflight for ALL routes first
-app.options(/.*/, cors(corsOptions));
+// 1. Mount CORS first so preflight and headers apply to all routes
 app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
+// 2. Security headers (allowing cross-origin requests from frontend)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 app.use(compression());
 
@@ -47,8 +64,8 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 app.use(sanitizeBody);
 
-// health check is above the rate limiters so uptime monitors never get blocked
-app.get(`${API_PREFIX}/health`, (_req, res) => {
+// health check is above the rate limiters so uptime monitors and keep-alive cron never get blocked
+app.get(['/health', '/api/health', `${API_PREFIX}/health`, '/'], (_req, res) => {
   const dbUp = isDBConnected();
   new ApiResponse(dbUp ? 200 : 503, dbUp ? 'OK' : 'Database unavailable', {
     uptime: Math.round(process.uptime()),
