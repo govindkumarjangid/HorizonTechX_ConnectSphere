@@ -1,93 +1,179 @@
 import ApiError from '../utils/ApiError.js';
-import { buildPage } from '../utils/pagination.js';
-import followRepository from '../repositories/follow.repository.js';
-import userRepository from '../repositories/user.repository.js';
+import { Follow, User } from '../models/index.js';
+import { emitNotification } from '../socket.js';
 
-const DUPLICATE_KEY_CODE = 11000;
+const USER_FIELDS = 'username bio avatar followersCount followingCount';
 
-const isSameId = (a, b) => String(a) === String(b);
-
-const follow = async (currentUserId, targetUserId) => {
-  if (isSameId(currentUserId, targetUserId)) {
+const follow = async (currentUser, targetUserId) => {
+  if (String(currentUser._id) === String(targetUserId)) {
     throw ApiError.badRequest('You cannot follow yourself');
   }
 
-  const target = await userRepository.findPublicById(targetUserId);
-  if (!target) throw ApiError.notFound('User not found');
+  const targetUser = await User.findById(targetUserId);
+  if (!targetUser) throw ApiError.notFound('User not found');
 
-  try {
-    await followRepository.create(currentUserId, target._id);
-  } catch (error) {
-    // the unique index blocks double clicks and parallel requests
-    if (error.code === DUPLICATE_KEY_CODE) throw ApiError.conflict('You already follow this user');
-    throw error;
+  const existing = await Follow.findOne({
+    follower: currentUser._id,
+    following: targetUserId,
+  });
+
+  if (existing) {
+    throw ApiError.conflict('You already follow this user');
   }
 
+  await Follow.create({
+    follower: currentUser._id,
+    following: targetUserId,
+  });
+
   const [updatedTarget] = await Promise.all([
-    userRepository.incrementCounter(target._id, 'followersCount', 1),
-    userRepository.incrementCounter(currentUserId, 'followingCount', 1),
+    User.findByIdAndUpdate(
+      targetUserId,
+      { $inc: { followersCount: 1 } },
+      { new: true }
+    ),
+    User.findByIdAndUpdate(
+      currentUser._id,
+      { $inc: { followingCount: 1 } },
+      { new: true }
+    ),
   ]);
 
-  return { isFollowing: true, followersCount: updatedTarget.followersCount };
+  // Trigger real-time notification to target user
+  emitNotification(targetUserId, {
+    type: 'follow',
+    fromUser: {
+      id: currentUser._id,
+      username: currentUser.username,
+      avatar: currentUser.avatar,
+    },
+    createdAt: new Date().toISOString(),
+  });
+
+  return {
+    isFollowing: true,
+    followersCount: updatedTarget.followersCount,
+  };
 };
 
 const unfollow = async (currentUserId, targetUserId) => {
-  const removed = await followRepository.remove(currentUserId, targetUserId);
-  if (!removed) throw ApiError.badRequest('You are not following this user');
+  const removed = await Follow.findOneAndDelete({
+    follower: currentUserId,
+    following: targetUserId,
+  });
+
+  if (!removed) {
+    throw ApiError.badRequest('You are not following this user');
+  }
 
   const [updatedTarget] = await Promise.all([
-    userRepository.incrementCounter(targetUserId, 'followersCount', -1),
-    userRepository.incrementCounter(currentUserId, 'followingCount', -1),
+    User.findByIdAndUpdate(
+      targetUserId,
+      { $inc: { followersCount: -1 } },
+      { new: true }
+    ),
+    User.findByIdAndUpdate(
+      currentUserId,
+      { $inc: { followingCount: -1 } },
+      { new: true }
+    ),
   ]);
 
-  return { isFollowing: false, followersCount: updatedTarget?.followersCount ?? 0 };
+  return {
+    isFollowing: false,
+    followersCount: Math.max(0, updatedTarget?.followersCount || 0),
+  };
 };
 
-// adds isFollowing / isCurrentUser so the list can show the right button
-const markFollowState = async (users, currentUserId) => {
-  const followedIds = await followRepository.findFollowedAmong(
-    currentUserId,
-    users.map((user) => user._id)
-  );
-  const followedSet = new Set(followedIds.map(String));
-
-  return users.map((user) => ({
-    ...user,
-    isFollowing: followedSet.has(String(user._id)),
-    isCurrentUser: isSameId(user._id, currentUserId),
-  }));
-};
-
-const listConnections = async ({ username, currentUserId, pagination, find, pick }) => {
-  const user = await userRepository.findPublicByUsername(username.toLowerCase());
+const getFollowers = async (username, currentUserId, { skip = 0, limit = 20 }) => {
+  const user = await User.findOne({ username: username.toLowerCase() });
   if (!user) throw ApiError.notFound('User not found');
 
-  const { skip, limit } = pagination;
-  const rows = await find(user._id, { skip, limit: limit + 1 });
-  const page = buildPage(rows, pagination);
+  const [follows, total] = await Promise.all([
+    Follow.find({ following: user._id })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('follower', USER_FIELDS)
+      .lean(),
+    Follow.countDocuments({ following: user._id }),
+  ]);
 
-  // a populated user can be null if the account was removed
-  const users = page.items.map(pick).filter(Boolean);
+  const followerIds = follows.map((f) => f.follower?._id).filter(Boolean);
+  const myFollowings = new Set(
+    (
+      await Follow.find({
+        follower: currentUserId,
+        following: { $in: followerIds },
+      }).distinct('following')
+    ).map(String)
+  );
 
-  return { ...page, items: await markFollowState(users, currentUserId) };
+  const items = follows
+    .filter((f) => f.follower)
+    .map((f) => ({
+      ...f.follower,
+      isFollowing: myFollowings.has(String(f.follower._id)),
+      isSelf: String(f.follower._id) === String(currentUserId),
+    }));
+
+  return {
+    items,
+    pagination: {
+      total,
+      page: Math.floor(skip / limit) + 1,
+      limit,
+      hasMore: skip + items.length < total,
+    },
+  };
 };
 
-const getFollowers = (username, currentUserId, pagination) =>
-  listConnections({
-    username,
-    currentUserId,
-    pagination,
-    find: followRepository.findFollowers,
-    pick: (row) => row.follower,
-  });
+const getFollowing = async (username, currentUserId, { skip = 0, limit = 20 }) => {
+  const user = await User.findOne({ username: username.toLowerCase() });
+  if (!user) throw ApiError.notFound('User not found');
 
-const getFollowing = (username, currentUserId, pagination) =>
-  listConnections({
-    username,
-    currentUserId,
-    pagination,
-    find: followRepository.findFollowing,
-    pick: (row) => row.following,
-  });
+  const [follows, total] = await Promise.all([
+    Follow.find({ follower: user._id })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('following', USER_FIELDS)
+      .lean(),
+    Follow.countDocuments({ follower: user._id }),
+  ]);
 
-export default { follow, unfollow, getFollowers, getFollowing };
+  const followingIds = follows.map((f) => f.following?._id).filter(Boolean);
+  const myFollowings = new Set(
+    (
+      await Follow.find({
+        follower: currentUserId,
+        following: { $in: followingIds },
+      }).distinct('following')
+    ).map(String)
+  );
+
+  const items = follows
+    .filter((f) => f.following)
+    .map((f) => ({
+      ...f.following,
+      isFollowing: myFollowings.has(String(f.following._id)),
+      isSelf: String(f.following._id) === String(currentUserId),
+    }));
+
+  return {
+    items,
+    pagination: {
+      total,
+      page: Math.floor(skip / limit) + 1,
+      limit,
+      hasMore: skip + items.length < total,
+    },
+  };
+};
+
+export default {
+  follow,
+  unfollow,
+  getFollowers,
+  getFollowing,
+};

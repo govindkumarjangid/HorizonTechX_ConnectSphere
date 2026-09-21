@@ -21,14 +21,14 @@ const followSchema = new mongoose.Schema(
   }
 );
 
-
 followSchema.index({ follower: 1, following: 1 }, { unique: true });
 followSchema.index({ follower: 1, createdAt: -1 });
 followSchema.index({ following: 1, createdAt: -1 });
 
 followSchema.pre('validate', function () {
-  if (String(this.follower) === String(this.following))
+  if (String(this.follower) === String(this.following)) {
     this.invalidate('following', 'You cannot follow yourself');
+  }
 });
 
 const Follow = mongoose.model('Follow', followSchema);

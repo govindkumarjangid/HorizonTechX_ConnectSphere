@@ -4,15 +4,13 @@ import { getPagination } from '../utils/pagination.js';
 import followService from '../services/follow.service.js';
 
 export const follow = asyncHandler(async (req, res) => {
-  const result = await followService.follow(req.user._id, req.params.userId);
-
-  new ApiResponse(200, 'User followed', result).send(res);
+  const result = await followService.follow(req.user, req.params.userId);
+  new ApiResponse(200, 'User followed successfully', result).send(res);
 });
 
 export const unfollow = asyncHandler(async (req, res) => {
   const result = await followService.unfollow(req.user._id, req.params.userId);
-
-  new ApiResponse(200, 'User unfollowed', result).send(res);
+  new ApiResponse(200, 'User unfollowed successfully', result).send(res);
 });
 
 export const getFollowers = asyncHandler(async (req, res) => {
@@ -21,8 +19,7 @@ export const getFollowers = asyncHandler(async (req, res) => {
     req.user._id,
     getPagination(req.query)
   );
-
-  new ApiResponse(200, 'Followers fetched', data).send(res);
+  new ApiResponse(200, 'Followers fetched successfully', data).send(res);
 });
 
 export const getFollowing = asyncHandler(async (req, res) => {
@@ -31,6 +28,5 @@ export const getFollowing = asyncHandler(async (req, res) => {
     req.user._id,
     getPagination(req.query)
   );
-
-  new ApiResponse(200, 'Following fetched', data).send(res);
+  new ApiResponse(200, 'Following fetched successfully', data).send(res);
 });

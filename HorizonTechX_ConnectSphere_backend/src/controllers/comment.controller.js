@@ -4,20 +4,17 @@ import { getPagination } from '../utils/pagination.js';
 import commentService from '../services/comment.service.js';
 
 export const addComment = asyncHandler(async (req, res) => {
-  const comment = await commentService.addComment(req.params.postId, req.user._id, req.body);
-
-  new ApiResponse(201, 'Comment added', comment).send(res);
+  const comment = await commentService.addComment(req.params.postId, req.user, req.body);
+  new ApiResponse(201, 'Comment added successfully', comment).send(res);
 });
 
 export const getComments = asyncHandler(async (req, res) => {
   const data = await commentService.getComments(req.params.postId, getPagination(req.query));
-
-  new ApiResponse(200, 'Comments fetched', data).send(res);
+  new ApiResponse(200, 'Comments fetched successfully', data).send(res);
 });
 
 export const deleteComment = asyncHandler(async (req, res) => {
   const { postId, commentId } = req.params;
   await commentService.deleteComment(postId, commentId, req.user._id);
-
-  new ApiResponse(200, 'Comment deleted').send(res);
+  new ApiResponse(200, 'Comment deleted successfully').send(res);
 });

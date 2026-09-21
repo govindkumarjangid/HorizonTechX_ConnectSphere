@@ -1,7 +1,9 @@
+import http from 'node:http';
 import env from '../src/configs/env.config.js';
 import { connectDB, disconnectDB } from '../src/configs/db.config.js';
 import app from './app.js';
-import { SHUTDOWN_TIMEOUT_MS } from "./constents.js"
+import { SHUTDOWN_TIMEOUT_MS } from "./constents.js";
+import { initSocket } from './socket.js';
 
 
 let server;
@@ -47,7 +49,10 @@ process.on('uncaughtException', (error) => {
 
 const start = async () => {
   await connectDB();
-  server = app.listen(env.port, () => {
+  server = http.createServer(app);
+  initSocket(server);
+
+  server.listen(env.port, () => {
     console.log(`Server running in ${env.nodeEnv} mode on port ${env.port}...`);
   });
 

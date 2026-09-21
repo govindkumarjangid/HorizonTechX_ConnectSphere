@@ -11,8 +11,8 @@ import { isDBConnected } from '../src/configs/db.config.js';
 import ApiResponse from './utils/ApiResponse.js';
 import sanitizeBody from './middlewares/sanitize.middleware.js';
 import { notFound, errorHandler } from './middlewares/error.middleware.js';
-// import routes from './routes/index.js';
-import { API_PREFIX } from "./constents.js"
+import routes from './routes/index.js';
+import { API_PREFIX } from "./constents.js";
 
 
 const app = express();
@@ -80,7 +80,10 @@ const authLimiter = rateLimit({
 app.use(`${API_PREFIX}/auth/login`, authLimiter);
 app.use(`${API_PREFIX}/auth/register`, authLimiter);
 
-// app.use(API_PREFIX, routes);
+app.use('/api', routes);
+if (API_PREFIX !== '/api') {
+  app.use(API_PREFIX, routes);
+}
 
 // these two must stay last
 app.use(notFound);

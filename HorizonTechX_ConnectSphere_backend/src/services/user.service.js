@@ -1,63 +1,69 @@
 import ApiError from '../utils/ApiError.js';
-import { buildPage } from '../utils/pagination.js';
-import { uploadImage, deleteImage } from '../config/cloudinary.config.js';
-import userRepository from '../repositories/user.repository.js';
-import followRepository from '../repositories/follow.repository.js';
+import { User, Follow } from '../models/index.js';
 
-const isSameId = (a, b) => String(a) === String(b);
+const PUBLIC_FIELDS = 'username bio avatar followersCount followingCount postsCount createdAt';
 
 const getProfile = async (username, currentUserId) => {
-  const user = await userRepository.findPublicByUsername(username.toLowerCase());
+  const user = await User.findOne({ username: username.toLowerCase() }).select(PUBLIC_FIELDS);
   if (!user) throw ApiError.notFound('User not found');
 
-  const isOwnProfile = isSameId(user._id, currentUserId);
+  const isOwnProfile = String(user._id) === String(currentUserId);
   const isFollowing = isOwnProfile
     ? false
-    : Boolean(await followRepository.exists(currentUserId, user._id));
+    : Boolean(await Follow.exists({ follower: currentUserId, following: user._id }));
 
-  return { ...user, isOwnProfile, isFollowing };
+  return {
+    ...user.toJSON(),
+    isOwnProfile,
+    isFollowing,
+  };
 };
 
-const updateProfile = async (userId, { fullName, bio }) => {
-  const changes = {};
-  if (fullName !== undefined) changes.fullName = fullName;
-  if (bio !== undefined) changes.bio = bio;
+const updateProfile = async (userId, { username, bio, avatar }) => {
+  const user = await User.findById(userId);
+  if (!user) throw ApiError.notFound('User not found');
 
-  return userRepository.updateProfile(userId, changes);
-};
-
-const updateAvatar = async (userId, file) => {
-  if (!file) throw ApiError.badRequest('Avatar image is required');
-
-  const user = await userRepository.findById(userId);
-  const avatar = await uploadImage(file.buffer, 'avatar');
-
-  let updatedUser;
-  try {
-    updatedUser = await userRepository.updateProfile(userId, { avatar });
-  } catch (error) {
-    // do not leave an unused image behind
-    await deleteImage(avatar.publicId);
-    throw error;
+  if (username !== undefined) {
+    const normalized = username.trim().toLowerCase();
+    if (normalized !== user.username) {
+      const existing = await User.findOne({ username: normalized });
+      if (existing) {
+        throw ApiError.conflict('Username is already taken');
+      }
+      user.username = normalized;
+    }
   }
 
-  await deleteImage(user.avatar?.publicId);
-  return updatedUser;
+  if (bio !== undefined) {
+    user.bio = bio.trim();
+  }
+
+  if (avatar !== undefined) {
+    user.avatar = avatar.trim();
+  }
+
+  await user.save();
+  return user.toJSON();
 };
 
-const searchUsers = async (text, pagination) => {
-  const searchText = text.trim();
-  if (!searchText) return buildPage([], pagination);
+const getSuggestions = async (currentUserId, limit = 5) => {
+  const followingIds = await Follow.find({ follower: currentUserId }).distinct('following');
+  const excludeIds = [...followingIds, currentUserId];
 
-  const { skip, limit } = pagination;
-  const rows = await userRepository.search(searchText, { skip, limit: limit + 1 });
+  const suggestions = await User.find({ _id: { $nin: excludeIds } })
+    .select(PUBLIC_FIELDS)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
 
-  return buildPage(rows, pagination);
+  return suggestions.map((u) => ({
+    ...u,
+    isFollowing: false,
+  }));
 };
 
-const getSuggestions = async (userId, limit = 5) => {
-  const followingIds = await followRepository.findFollowingIds(userId);
-  return userRepository.findSuggestions([...followingIds, userId], limit);
+export default {
+  getProfile,
+  updateProfile,
+  getSuggestions,
 };
-
-export default { getProfile, updateProfile, updateAvatar, searchUsers, getSuggestions };

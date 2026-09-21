@@ -1,50 +1,88 @@
 import ApiError from '../utils/ApiError.js';
-import { buildPage } from '../utils/pagination.js';
-import commentRepository from '../repositories/comment.repository.js';
-import postRepository from '../repositories/post.repository.js';
+import { Comment, Post } from '../models/index.js';
+import { emitNotification } from '../socket.js';
 
-const isSameId = (a, b) => String(a) === String(b);
+const AUTHOR_FIELDS = 'username avatar';
 
-const assertPostExists = async (postId) => {
-  if (!(await postRepository.exists(postId))) throw ApiError.notFound('Post not found');
+const addComment = async (postId, currentUser, { text }) => {
+  const post = await Post.findById(postId);
+  if (!post) throw ApiError.notFound('Post not found');
+
+  const trimmed = String(text || '').trim();
+  if (!trimmed) throw ApiError.badRequest('Comment cannot be empty');
+
+  const comment = await Comment.create({
+    post: postId,
+    author: currentUser._id,
+    text: trimmed,
+  });
+
+  await Post.findByIdAndUpdate(postId, { $inc: { commentsCount: 1 } });
+
+  const populated = await Comment.findById(comment._id)
+    .populate('author', AUTHOR_FIELDS)
+    .lean();
+
+  // Trigger real-time notification to post author
+  emitNotification(post.author, {
+    type: 'comment',
+    fromUser: {
+      id: currentUser._id,
+      username: currentUser.username,
+      avatar: currentUser.avatar,
+    },
+    postId: post._id,
+    createdAt: new Date().toISOString(),
+  });
+
+  return populated;
 };
 
-const addComment = async (postId, userId, { text }) => {
-  await assertPostExists(postId);
+const getComments = async (postId, { skip = 0, limit = 20 }) => {
+  const post = await Post.findById(postId);
+  if (!post) throw ApiError.notFound('Post not found');
 
-  const comment = await commentRepository.create({ post: postId, author: userId, text });
-  await postRepository.incrementCommentsCount(postId, 1);
+  const [comments, total] = await Promise.all([
+    Comment.find({ post: postId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('author', AUTHOR_FIELDS)
+      .lean(),
+    Comment.countDocuments({ post: postId }),
+  ]);
 
-  return comment;
+  return {
+    items: comments,
+    pagination: {
+      total,
+      page: Math.floor(skip / limit) + 1,
+      limit,
+      hasMore: skip + comments.length < total,
+    },
+  };
 };
 
-const getComments = async (postId, pagination) => {
-  await assertPostExists(postId);
-
-  const { skip, limit } = pagination;
-  const rows = await commentRepository.findByPost(postId, { skip, limit: limit + 1 });
-
-  return buildPage(rows, pagination);
-};
-
-// allowed for the comment writer and for the owner of the post
 const deleteComment = async (postId, commentId, userId) => {
-  const comment = await commentRepository.findById(commentId);
-
-  // the comment must belong to the post in the URL
-  if (!comment || !isSameId(comment.post, postId)) {
+  const comment = await Comment.findById(commentId);
+  if (!comment || String(comment.post) !== String(postId)) {
     throw ApiError.notFound('Comment not found');
   }
 
-  if (!isSameId(comment.author, userId)) {
-    const postAuthorId = await postRepository.findAuthorId(postId);
-    if (!isSameId(postAuthorId, userId)) {
-      throw ApiError.forbidden('You cannot delete this comment');
-    }
+  const post = await Post.findById(postId);
+  const isCommentAuthor = String(comment.author) === String(userId);
+  const isPostAuthor = post && String(post.author) === String(userId);
+
+  if (!isCommentAuthor && !isPostAuthor) {
+    throw ApiError.forbidden('You do not have permission to delete this comment');
   }
 
-  await commentRepository.deleteById(commentId);
-  await postRepository.incrementCommentsCount(postId, -1);
+  await Comment.findByIdAndDelete(commentId);
+  await Post.findByIdAndUpdate(postId, { $inc: { commentsCount: -1 } });
 };
 
-export default { addComment, getComments, deleteComment };
+export default {
+  addComment,
+  getComments,
+  deleteComment,
+};
