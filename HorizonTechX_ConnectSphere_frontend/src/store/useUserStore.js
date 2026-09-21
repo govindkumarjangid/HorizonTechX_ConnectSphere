@@ -187,10 +187,25 @@ export const useUserStore = create((set, get) => ({
     });
   },
 
+  handleSocketNewPost: (newPost) => {
+    if (!newPost?._id) return;
+    set((state) => {
+      if (state.userPosts.some((p) => String(p._id) === String(newPost._id))) return state;
+      const isPostAuthor =
+        state.profile &&
+        String(newPost.author?._id || newPost.author?.username || newPost.author) ===
+          String(state.profile?._id || state.profile?.username);
+      if (isPostAuthor) {
+        return { userPosts: [newPost, ...state.userPosts] };
+      }
+      return state;
+    });
+  },
+
   handleSocketDeletePost: (postId) => {
     if (!postId) return;
     set((state) => ({
-      userPosts: state.userPosts.filter((p) => p._id !== postId),
+      userPosts: state.userPosts.filter((p) => String(p._id) !== String(postId)),
     }));
   },
 
@@ -199,7 +214,7 @@ export const useUserStore = create((set, get) => ({
     const finalCount = Math.max(0, Number(likesCount) || 0);
     set((state) => ({
       userPosts: state.userPosts.map((p) => {
-        if (p._id !== postId) return p;
+        if (String(p._id) !== String(postId)) return p;
         return {
           ...p,
           likesCount: finalCount,
@@ -213,7 +228,7 @@ export const useUserStore = create((set, get) => ({
     if (!postId) return;
     set((state) => ({
       userPosts: state.userPosts.map((p) =>
-        p._id === postId ? { ...p, commentsCount } : p
+        String(p._id) === String(postId) ? { ...p, commentsCount } : p
       ),
     }));
   },
@@ -222,7 +237,7 @@ export const useUserStore = create((set, get) => ({
     if (!updatedPost?._id) return;
     set((state) => ({
       userPosts: state.userPosts.map((p) =>
-        p._id === updatedPost._id
+        String(p._id) === String(updatedPost._id)
           ? { ...p, ...updatedPost, isLiked: p.isLiked }
           : p
       ),

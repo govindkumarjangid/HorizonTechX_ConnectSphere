@@ -5,6 +5,7 @@ import useUserStore from './useUserStore';
 
 export const usePostStore = create((set, get) => ({
   posts: [],
+  likingMap: {},
   isLoading: false,
   isLoadingMore: false,
   isCreating: false,
@@ -53,10 +54,20 @@ export const usePostStore = create((set, get) => ({
       const res = await postApi.createPost(postData);
       const newPost = res.data?.data || res.data;
 
-      set((state) => ({
-        posts: [newPost, ...state.posts],
-        isCreating: false,
-      }));
+      if (newPost?._id) {
+        set((state) => {
+          if (state.posts.some((p) => String(p._id) === String(newPost._id))) {
+            return { isCreating: false };
+          }
+          return {
+            posts: [newPost, ...state.posts],
+            isCreating: false,
+          };
+        });
+        useUserStore.getState().handleSocketNewPost?.(newPost);
+      } else {
+        set({ isCreating: false });
+      }
 
       useToastStore.getState().success('Post published successfully!');
       return { success: true, post: newPost };
@@ -115,16 +126,33 @@ export const usePostStore = create((set, get) => ({
   },
 
   toggleLike: async (postId) => {
+    if (!postId) return;
+    const { likingMap } = get();
+    // In-flight mutex: ignore rapid double clicks
+    if (likingMap?.[postId]) return;
+
+    set((state) => ({
+      likingMap: { ...state.likingMap, [postId]: true },
+    }));
+
+    const currentPost =
+      get().posts.find((p) => String(p._id) === String(postId)) ||
+      useUserStore.getState().userPosts.find((p) => String(p._id) === String(postId));
+
+    const willLike = currentPost ? !currentPost.isLiked : true;
+    const optimisticCount = Math.max(
+      0,
+      (currentPost?.likesCount || 0) + (willLike ? 1 : -1)
+    );
+
     // Optimistic update in usePostStore
     set((state) => ({
       posts: state.posts.map((p) => {
-        if (p._id !== postId) return p;
-        const willLike = !p.isLiked;
-        const newCount = Math.max(0, (p.likesCount || 0) + (willLike ? 1 : -1));
+        if (String(p._id) !== String(postId)) return p;
         return {
           ...p,
-          isLiked: newCount > 0 && willLike,
-          likesCount: newCount,
+          isLiked: optimisticCount > 0 && willLike,
+          likesCount: optimisticCount,
         };
       }),
     }));
@@ -132,13 +160,11 @@ export const usePostStore = create((set, get) => ({
     // Optimistic update in useUserStore
     useUserStore.setState((state) => ({
       userPosts: state.userPosts.map((p) => {
-        if (p._id !== postId) return p;
-        const willLike = !p.isLiked;
-        const newCount = Math.max(0, (p.likesCount || 0) + (willLike ? 1 : -1));
+        if (String(p._id) !== String(postId)) return p;
         return {
           ...p,
-          isLiked: newCount > 0 && willLike,
-          likesCount: newCount,
+          isLiked: optimisticCount > 0 && willLike,
+          likesCount: optimisticCount,
         };
       }),
     }));
@@ -151,22 +177,26 @@ export const usePostStore = create((set, get) => ({
         const finalIsLiked = finalCount > 0 && Boolean(data.isLiked);
         set((state) => ({
           posts: state.posts.map((p) =>
-            p._id === postId ? { ...p, isLiked: finalIsLiked, likesCount: finalCount } : p
+            String(p._id) === String(postId)
+              ? { ...p, isLiked: finalIsLiked, likesCount: finalCount }
+              : p
           ),
         }));
         useUserStore.setState((state) => ({
           userPosts: state.userPosts.map((p) =>
-            p._id === postId ? { ...p, isLiked: finalIsLiked, likesCount: finalCount } : p
+            String(p._id) === String(postId)
+              ? { ...p, isLiked: finalIsLiked, likesCount: finalCount }
+              : p
           ),
         }));
       }
     } catch (_err) {
       // Revert on error in both stores
+      const revertLike = !willLike;
+      const revertCount = Math.max(0, optimisticCount + (revertLike ? 1 : -1));
       set((state) => ({
         posts: state.posts.map((p) => {
-          if (p._id !== postId) return p;
-          const revertLike = !p.isLiked;
-          const revertCount = Math.max(0, (p.likesCount || 0) + (revertLike ? 1 : -1));
+          if (String(p._id) !== String(postId)) return p;
           return {
             ...p,
             isLiked: revertCount > 0 && revertLike,
@@ -176,9 +206,7 @@ export const usePostStore = create((set, get) => ({
       }));
       useUserStore.setState((state) => ({
         userPosts: state.userPosts.map((p) => {
-          if (p._id !== postId) return p;
-          const revertLike = !p.isLiked;
-          const revertCount = Math.max(0, (p.likesCount || 0) + (revertLike ? 1 : -1));
+          if (String(p._id) !== String(postId)) return p;
           return {
             ...p,
             isLiked: revertCount > 0 && revertLike,
@@ -187,13 +215,21 @@ export const usePostStore = create((set, get) => ({
         }),
       }));
       useToastStore.getState().error('Could not update like status');
+    } finally {
+      set((state) => {
+        const next = { ...state.likingMap };
+        delete next[postId];
+        return { likingMap: next };
+      });
     }
   },
 
   incrementCommentCount: (postId) => {
     set((state) => ({
       posts: state.posts.map((p) =>
-        p._id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p
+        String(p._id) === String(postId)
+          ? { ...p, commentsCount: (p.commentsCount || 0) + 1 }
+          : p
       ),
     }));
   },
@@ -201,7 +237,9 @@ export const usePostStore = create((set, get) => ({
   decrementCommentCount: (postId) => {
     set((state) => ({
       posts: state.posts.map((p) =>
-        p._id === postId ? { ...p, commentsCount: Math.max(0, (p.commentsCount || 0) - 1) } : p
+        String(p._id) === String(postId)
+          ? { ...p, commentsCount: Math.max(0, (p.commentsCount || 0) - 1) }
+          : p
       ),
     }));
   },
@@ -210,7 +248,7 @@ export const usePostStore = create((set, get) => ({
   handleSocketNewPost: (newPost) => {
     if (!newPost?._id) return;
     set((state) => {
-      if (state.posts.some((p) => p._id === newPost._id)) return state;
+      if (state.posts.some((p) => String(p._id) === String(newPost._id))) return state;
       return { posts: [newPost, ...state.posts] };
     });
   },
@@ -218,7 +256,7 @@ export const usePostStore = create((set, get) => ({
   handleSocketDeletePost: (postId) => {
     if (!postId) return;
     set((state) => ({
-      posts: state.posts.filter((p) => p._id !== postId),
+      posts: state.posts.filter((p) => String(p._id) !== String(postId)),
     }));
   },
 
@@ -227,7 +265,7 @@ export const usePostStore = create((set, get) => ({
     const finalCount = Math.max(0, Number(likesCount) || 0);
     set((state) => ({
       posts: state.posts.map((p) => {
-        if (p._id !== postId) return p;
+        if (String(p._id) !== String(postId)) return p;
         return {
           ...p,
           likesCount: finalCount,
@@ -241,7 +279,7 @@ export const usePostStore = create((set, get) => ({
     if (!postId) return;
     set((state) => ({
       posts: state.posts.map((p) =>
-        p._id === postId ? { ...p, commentsCount } : p
+        String(p._id) === String(postId) ? { ...p, commentsCount } : p
       ),
     }));
   },
@@ -250,7 +288,7 @@ export const usePostStore = create((set, get) => ({
     if (!updatedPost?._id) return;
     set((state) => ({
       posts: state.posts.map((p) =>
-        p._id === updatedPost._id
+        String(p._id) === String(updatedPost._id)
           ? { ...p, ...updatedPost, isLiked: p.isLiked }
           : p
       ),

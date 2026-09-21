@@ -1,0 +1,11 @@
+{
+  "name": "horizontechx-connectsphere",
+  "private": true,
+  "workspaces": [
+    "HorizonTechX_ConnectSphere_frontend",
+    "HorizonTechX_ConnectSphere_backend"
+  ],
+  "scripts": {
+    "build": "npm --prefix HorizonTechX_ConnectSphere_frontend run build"
+  }
+}

@@ -48,15 +48,24 @@ export const useCommentStore = create((set, get) => ({
       const res = await commentApi.addComment(postId, { text: trimmed });
       const newComment = res.data?.data || res.data;
 
-      set((state) => ({
-        commentsByPost: {
-          ...state.commentsByPost,
-          [postId]: [...(state.commentsByPost[postId] || []), newComment],
-        },
-        postingByPost: { ...state.postingByPost, [postId]: false },
-      }));
+      if (newComment?._id) {
+        set((state) => {
+          const list = state.commentsByPost[postId] || [];
+          const exists = list.some((c) => String(c._id) === String(newComment._id));
+          return {
+            commentsByPost: {
+              ...state.commentsByPost,
+              [postId]: exists ? list : [...list, newComment],
+            },
+            postingByPost: { ...state.postingByPost, [postId]: false },
+          };
+        });
+      } else {
+        set((state) => ({
+          postingByPost: { ...state.postingByPost, [postId]: false },
+        }));
+      }
 
-      usePostStore.getState().incrementCommentCount(postId);
       useToastStore.getState().success('Comment added');
       return { success: true, comment: newComment };
     } catch (err) {
@@ -75,13 +84,12 @@ export const useCommentStore = create((set, get) => ({
     set((state) => ({
       commentsByPost: {
         ...state.commentsByPost,
-        [postId]: prevComments.filter((c) => c._id !== commentId),
+        [postId]: prevComments.filter((c) => String(c._id) !== String(commentId)),
       },
     }));
 
     try {
       await commentApi.deleteComment(postId, commentId);
-      usePostStore.getState().decrementCommentCount(postId);
       useToastStore.getState().success('Comment deleted');
       return { success: true };
     } catch (err) {
@@ -104,7 +112,7 @@ export const useCommentStore = create((set, get) => ({
     set((state) => {
       const existing = state.commentsByPost[postId];
       if (!existing) return state;
-      if (existing.some((c) => c._id === comment._id)) return state;
+      if (existing.some((c) => String(c._id) === String(comment._id))) return state;
       return {
         commentsByPost: {
           ...state.commentsByPost,
@@ -122,7 +130,7 @@ export const useCommentStore = create((set, get) => ({
       return {
         commentsByPost: {
           ...state.commentsByPost,
-          [postId]: existing.filter((c) => c._id !== commentId),
+          [postId]: existing.filter((c) => String(c._id) !== String(commentId)),
         },
       };
     });

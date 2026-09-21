@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd HorizonTechX_ConnectSphere_frontend && npm install && npm run build",
+  "outputDirectory": "HorizonTechX_ConnectSphere_frontend/dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -19,12 +19,14 @@ export const useSocketStore = create((set, get) => ({
       return;
     }
 
-    if (socketInstance && socketInstance.connected) {
+    if (socketInstance && (socketInstance.connected || socketInstance.active)) {
       return;
     }
 
     if (socketInstance) {
+      socketInstance.removeAllListeners();
       socketInstance.disconnect();
+      socketInstance = null;
     }
 
     const socketUrl =
@@ -62,6 +64,7 @@ export const useSocketStore = create((set, get) => ({
     // Real-time Post updates
     socketInstance.on('post:new', (post) => {
       usePostStore.getState().handleSocketNewPost(post);
+      useUserStore.getState().handleSocketNewPost(post);
     });
 
     socketInstance.on('post:updated', (post) => {
@@ -106,6 +109,7 @@ export const useSocketStore = create((set, get) => ({
 
   disconnect: () => {
     if (socketInstance) {
+      socketInstance.removeAllListeners();
       socketInstance.disconnect();
       socketInstance = null;
     }
