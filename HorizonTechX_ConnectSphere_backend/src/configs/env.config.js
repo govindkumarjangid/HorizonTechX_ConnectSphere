@@ -72,13 +72,6 @@ const env = {
 if (accessSecret && accessSecret === refreshSecret)
   errors.push('ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET must be different');
 
-if (isProd) {
-  if (accessSecret && accessSecret.length < 64)
-    errors.push('ACCESS_TOKEN_SECRET must be at least 64 characters in production');
-
-  if (refreshSecret && refreshSecret.length < 64)
-    errors.push('REFRESH_TOKEN_SECRET must be at least 64 characters in production');
-}
 
 if (errors.length > 0)
   throw new Error(`Invalid environment config:\n - ${errors.join('\n - ')}`);
