@@ -10,6 +10,7 @@ const getToken = (req) => {
 };
 
 export const protect = asyncHandler(async (req, _res, next) => {
+  if (req.method === 'OPTIONS') return next();
   const token = getToken(req);
   if (!token) throw ApiError.unauthorized('Authentication required');
 

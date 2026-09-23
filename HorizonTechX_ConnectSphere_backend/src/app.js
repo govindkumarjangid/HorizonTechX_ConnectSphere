@@ -37,15 +37,25 @@ const corsOptions = {
     'Origin',
     'Access-Control-Request-Method',
     'Access-Control-Request-Headers',
+    'Cache-Control',
+    'Pragma',
   ],
   exposedHeaders: ['Set-Cookie', 'Authorization'],
-  maxAge: 86400,
+  maxAge: 600, // 10 minutes
   optionsSuccessStatus: 204,
 };
 
 // 1. Mount CORS first so preflight and headers apply to all routes
 app.use(cors(corsOptions));
 app.options(/.*/, cors(corsOptions));
+
+// Explicit preflight handler ensuring 204 is returned immediately for any OPTIONS request
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 
 // 2. Security headers (allowing cross-origin requests from frontend)
 app.use(
@@ -76,11 +86,12 @@ app.get(['/health', '/api/health', `${API_PREFIX}/health`, '/'], (_req, res) => 
 
 const tooManyRequests = (message) => ({ success: false, message, data: null });
 
-// general limit for the whole API
+// general limit for the whole API (skip preflight requests)
 app.use('/api',
   rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 300,
+    skip: (req) => req.method === 'OPTIONS',
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: tooManyRequests('Too many requests, please try again later'),
@@ -91,6 +102,7 @@ app.use('/api',
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
+  skip: (req) => req.method === 'OPTIONS',
   skipSuccessfulRequests: true,
   standardHeaders: 'draft-7',
   legacyHeaders: false,

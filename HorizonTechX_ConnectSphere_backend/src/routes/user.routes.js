@@ -14,6 +14,7 @@ router.use(protect);
 router.get('/suggestions', userController.getSuggestions);
 router.patch('/profile', uploadAvatar, updateProfileRules, validate, userController.updateProfile);
 router.put('/profile', uploadAvatar, updateProfileRules, validate, userController.updateProfile);
+router.post('/profile', uploadAvatar, updateProfileRules, validate, userController.updateProfile);
 
 router.get('/:username', usernameParam, validate, userController.getProfile);
 router.get('/:username/posts', usernameParam, paginationRules, validate, postController.getUserPosts);
