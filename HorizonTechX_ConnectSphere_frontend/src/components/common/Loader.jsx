@@ -36,7 +36,7 @@ export const Loader = ({ size = 'md', className = '', text = '', fullPage = fals
 
 export const PostSkeleton = () => {
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 mb-4 animate-pulse space-y-4">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 mb-2.5 sm:mb-4 animate-pulse space-y-3 sm:space-y-4">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800" />
         <div className="space-y-1.5 flex-1">
@@ -60,11 +60,11 @@ export const PostSkeleton = () => {
 
 export const ProfileSkeleton = () => {
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden mb-6 animate-pulse">
-      <div className="w-full h-36 bg-slate-200 dark:bg-slate-800" />
-      <div className="px-6 pb-6 pt-0 relative">
-        <div className="-mt-12 mb-4">
-          <div className="w-24 h-24 rounded-full bg-slate-300 dark:bg-slate-700 ring-4 ring-white dark:ring-slate-900" />
+    <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl sm:rounded-3xl overflow-hidden mb-3 sm:mb-6 animate-pulse">
+      <div className="w-full h-24 sm:h-36 bg-slate-200 dark:bg-slate-800" />
+      <div className="px-3.5 sm:px-6 pb-3.5 sm:pb-6 pt-0 relative">
+        <div className="-mt-10 sm:-mt-12 mb-3 sm:mb-4">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-300 dark:bg-slate-700 ring-4 ring-white dark:ring-slate-900" />
         </div>
         <div className="space-y-3">
           <div className="w-48 h-5 bg-slate-200 dark:bg-slate-800 rounded-md" />

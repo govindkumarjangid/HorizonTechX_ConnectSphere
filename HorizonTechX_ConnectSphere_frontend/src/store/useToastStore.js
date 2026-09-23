@@ -4,6 +4,11 @@ export const useToastStore = create((set, get) => ({
   toasts: [],
 
   addToast: ({ type = 'info', message = '', title = '', fromUser = null, duration = 4000 }) => {
+    const existing = get().toasts;
+    if (existing.some((t) => t.message === message && t.type === type)) {
+      return null;
+    }
+
     const id = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const newToast = { id, type, message, title, fromUser, duration };
 

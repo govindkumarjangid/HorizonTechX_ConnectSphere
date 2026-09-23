@@ -67,7 +67,7 @@ export const Sidebar = () => {
       </div>
 
       <div className="px-2 text-[11px] text-slate-400 dark:text-slate-500">
-        ConnectSphere © 2026
+        Connectly © 2026
       </div>
     </aside>
   );

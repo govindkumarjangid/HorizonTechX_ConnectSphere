@@ -3,7 +3,7 @@ import { User, Follow } from '../models/index.js';
 import { uploadMedia } from '../configs/cloudinary.config.js';
 import { emitProfileUpdated } from '../socket.js';
 
-const PUBLIC_FIELDS = 'fullName username bio avatar followersCount followingCount postsCount createdAt';
+const PUBLIC_FIELDS = 'fullName username bio website avatar followersCount followingCount postsCount createdAt';
 
 const getProfile = async (username, currentUserId) => {
   const user = await User.findOne({ username: username.toLowerCase() }).select(PUBLIC_FIELDS);
@@ -21,7 +21,7 @@ const getProfile = async (username, currentUserId) => {
   };
 };
 
-const updateProfile = async (userId, { fullName, username, bio, avatar } = {}, file = null) => {
+const updateProfile = async (userId, { fullName, username, bio, avatar, website } = {}, file = null) => {
   const user = await User.findById(userId);
   if (!user) throw ApiError.notFound('User not found');
 
@@ -52,6 +52,10 @@ const updateProfile = async (userId, { fullName, username, bio, avatar } = {}, f
 
   if (bio !== undefined) {
     user.bio = bio.trim();
+  }
+
+  if (website !== undefined) {
+    user.website = typeof website === 'string' ? website.trim() : '';
   }
 
   await user.save();

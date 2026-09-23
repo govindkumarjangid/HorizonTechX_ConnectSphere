@@ -9,7 +9,7 @@ export const EmptyState = ({
   onAction,
 }) => {
   return (
-    <div className="flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800/80 rounded-2xl my-4">
+    <div className="flex flex-col items-center justify-center text-center p-5 sm:p-8 bg-white dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800/80 rounded-2xl my-3 sm:my-4">
       <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-3">
         <Icon className="w-6 h-6 stroke-[1.75]" />
       </div>
@@ -22,7 +22,7 @@ export const EmptyState = ({
       {actionLabel && onAction && (
         <button
           onClick={onAction}
-          className="px-4 py-2 text-sm font-medium rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs shadow-blue-500/10"
+          className="px-4 py-2 text-sm font-medium rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors"
         >
           {actionLabel}
         </button>

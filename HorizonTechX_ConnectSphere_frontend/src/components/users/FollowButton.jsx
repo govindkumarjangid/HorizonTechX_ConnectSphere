@@ -31,7 +31,7 @@ export const FollowButton = ({
           ? isHovered
             ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/50'
             : 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
-          : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-500/10'
+          : 'bg-blue-600 text-white hover:bg-blue-700'
       } ${className}`}
     >
       {isFollowing ? (

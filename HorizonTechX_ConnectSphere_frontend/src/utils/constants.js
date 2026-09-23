@@ -1,4 +1,4 @@
-export const APP_NAME = 'ConnectSphere';
+export const APP_NAME = 'Connectly';
 export const APP_TAGLINE = 'Connect, share & discover with intention';
 
 export const NAV_LINKS = [
@@ -22,7 +22,7 @@ export const SORT_OPTIONS = [
 ];
 
 export const VISIBILITY_OPTIONS = [
-  { id: 'public', label: 'Public', description: 'Anyone on or off ConnectSphere' },
+  { id: 'public', label: 'Public', description: 'Anyone on or off Connectly' },
   { id: 'connections', label: 'Connections only', description: 'Only people you connect with' },
   { id: 'private', label: 'Only me', description: 'Only visible to you' },
 ];

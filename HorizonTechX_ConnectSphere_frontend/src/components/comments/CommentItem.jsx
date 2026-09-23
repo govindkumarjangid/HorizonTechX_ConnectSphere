@@ -22,7 +22,7 @@ export const CommentItem = ({ comment, postAuthorId, onDelete }) => {
         size="sm"
       />
       <div className="flex-1 min-w-0">
-        <div className="bg-slate-100/80 dark:bg-slate-800/70 rounded-2xl px-3.5 py-2 inline-block max-w-full">
+        <div className="bg-slate-100/80 dark:bg-slate-800/70 rounded-2xl px-3 py-1.5 sm:px-3.5 sm:py-2 inline-block max-w-full">
           <div className="flex items-center gap-2">
             <Link
               to={`/profile/${comment.author?.username}`}

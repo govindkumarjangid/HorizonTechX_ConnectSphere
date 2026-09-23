@@ -19,41 +19,41 @@ const app = express();
 
 if (env.isProd) app.set('trust proxy', 1);
 
-const corsOptions = {
-  origin(origin, callback) {
-    if (isOriginAllowed(origin)) {
-      return callback(null, true);
-    }
-    console.warn(`[CORS] Rejected origin: "${origin}". Allowed origins configured:`, env.clientUrls);
-    callback(null, false);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'Access-Control-Request-Method',
-    'Access-Control-Request-Headers',
-    'Cache-Control',
-    'Pragma',
-  ],
-  exposedHeaders: ['Set-Cookie', 'Authorization'],
-  maxAge: 600, // 10 minutes
-  optionsSuccessStatus: 204,
-};
+// Bulletproof CORS configuration and preflight handler
+const allowedMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
+const allowedHeaders = [
+  'Content-Type',
+  'Authorization',
+  'X-Requested-With',
+  'Accept',
+  'Origin',
+  'Access-Control-Request-Method',
+  'Access-Control-Request-Headers',
+  'Cache-Control',
+  'Pragma',
+];
+const exposedHeaders = ['Set-Cookie', 'Authorization'];
 
-// 1. Mount CORS first so preflight and headers apply to all routes
-app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
-
-// Explicit preflight handler ensuring 204 is returned immediately for any OPTIONS request
 app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (isOriginAllowed(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', allowedMethods.join(', '));
+  res.setHeader('Access-Control-Allow-Headers', allowedHeaders.join(', '));
+  res.setHeader('Access-Control-Expose-Headers', exposedHeaders.join(', '));
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  // Respond immediately with 204 to any OPTIONS preflight request
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
+
   next();
 });
 

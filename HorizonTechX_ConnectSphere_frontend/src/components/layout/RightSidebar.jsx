@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { User } from 'lucide-react';
 import useUserStore from '../../store/useUserStore';
 import Avatar from '../users/Avatar';
 import FollowButton from '../users/FollowButton';
@@ -25,7 +25,7 @@ export const RightSidebar = () => {
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs transition-colors">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-amber-500" />
+            <User className=" text-white bg-blue-500 p-1 rounded-full" />
             <span>Who to follow</span>
           </h3>
         </div>

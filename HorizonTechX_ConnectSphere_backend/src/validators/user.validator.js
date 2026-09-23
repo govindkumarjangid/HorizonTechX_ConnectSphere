@@ -25,6 +25,11 @@ export const updateProfileRules = [
     .trim()
     .isLength({ max: 160 })
     .withMessage('Bio cannot exceed 160 characters'),
+  body('website')
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Website URL cannot exceed 200 characters'),
   body('avatar')
     .optional()
     .trim(),

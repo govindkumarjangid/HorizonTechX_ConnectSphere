@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import authApi from '../api/authApi';
 import useToastStore from './useToastStore';
+import { formatErrorMessage } from '../utils/formatError';
 
 export const useAuthStore = create((set, get) => ({
   user: (() => {
@@ -55,6 +56,7 @@ export const useAuthStore = create((set, get) => ({
   },
 
   login: async (credentials) => {
+    if (get().isSubmitting) return { success: false };
     try {
       set({ isSubmitting: true });
       const res = await authApi.login(credentials);
@@ -80,13 +82,14 @@ export const useAuthStore = create((set, get) => ({
       return { success: true, user: data.user };
     } catch (err) {
       set({ isSubmitting: false });
-      const message = err.response?.data?.message || err.message || 'Login failed';
+      const message = formatErrorMessage(err, 'Login failed. Please check your credentials.');
       useToastStore.getState().error(message);
       return { success: false, error: message };
     }
   },
 
   register: async (userData) => {
+    if (get().isSubmitting) return { success: false };
     try {
       set({ isSubmitting: true });
       const res = await authApi.register(userData);
@@ -108,11 +111,11 @@ export const useAuthStore = create((set, get) => ({
         isSubmitting: false,
       });
 
-      useToastStore.getState().success('Account created successfully! Welcome to ConnectSphere.');
+      useToastStore.getState().success('Account created successfully! Welcome to Connectly.');
       return { success: true, user: data.user };
     } catch (err) {
       set({ isSubmitting: false });
-      const message = err.response?.data?.message || err.message || 'Registration failed';
+      const message = formatErrorMessage(err, 'Registration failed. Please try again.');
       useToastStore.getState().error(message);
       return { success: false, error: message };
     }

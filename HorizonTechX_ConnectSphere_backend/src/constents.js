@@ -27,7 +27,7 @@ export const PRESETS = {
 };
 
 export const PUBLIC_FIELDS =
-  'username fullName bio avatar followersCount followingCount postsCount createdAt';
+  'username fullName bio website avatar followersCount followingCount postsCount createdAt';
 
 export const COUNTER_FIELDS = ['followersCount', 'followingCount', 'postsCount'];
 

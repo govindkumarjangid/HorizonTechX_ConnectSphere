@@ -3,6 +3,7 @@ import userApi from '../api/userApi';
 import followApi from '../api/followApi';
 import useAuthStore from './useAuthStore';
 import useToastStore from './useToastStore';
+import { formatErrorMessage } from '../utils/formatError';
 
 export const useUserStore = create((set, get) => ({
   profile: null,
@@ -43,6 +44,7 @@ export const useUserStore = create((set, get) => ({
   },
 
   updateProfile: async (formDataOrData) => {
+    if (get().isUpdatingProfile) return { success: false };
     set({ isUpdatingProfile: true });
 
     try {
@@ -66,12 +68,7 @@ export const useUserStore = create((set, get) => ({
       return { success: true, user: updatedUser };
     } catch (err) {
       set({ isUpdatingProfile: false });
-      const firstError = err.response?.data?.errors?.[0];
-      const msg =
-        (typeof firstError === 'string' ? firstError : firstError?.message) ||
-        err.response?.data?.message ||
-        err.message ||
-        'Failed to update profile';
+      const msg = formatErrorMessage(err, 'Failed to update profile');
       useToastStore.getState().error(msg);
       return { success: false, error: msg };
     }

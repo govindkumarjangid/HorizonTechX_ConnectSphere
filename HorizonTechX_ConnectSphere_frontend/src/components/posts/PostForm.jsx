@@ -107,13 +107,13 @@ export const PostForm = ({ onPostCreated, isInsideModal = false }) => {
 
   const containerClasses = isInsideModal
     ? 'w-full'
-    : 'w-full bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 p-3.5 sm:p-5 shadow-xs mb-5 transition-colors';
+    : 'w-full bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 p-3 sm:p-5 shadow-xs mb-3 sm:mb-5 transition-colors';
 
   return (
     <div className={containerClasses}>
       <form onSubmit={handleSubmit} noValidate className="w-full">
         {/* User Header on Mobile */}
-        <div className="flex items-center gap-2.5 mb-2.5 sm:hidden">
+        <div className="flex items-center gap-2 mb-2 sm:hidden">
           <Avatar src={user?.avatar} alt={user?.username} size="sm" />
           <div className="min-w-0">
             <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
@@ -129,16 +129,16 @@ export const PostForm = ({ onPostCreated, isInsideModal = false }) => {
             <Avatar src={user?.avatar} alt={user?.username} size="md" />
           </div>
 
-          <div className="flex-1 min-w-0 space-y-3 w-full">
+          <div className="flex-1 min-w-0 space-y-2.5 sm:space-y-3 w-full">
             {/* Full-width responsive textarea */}
             <textarea
               ref={textareaRef}
-              rows={3}
+              rows={10}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="What's happening? Share a post, image or video..."
               maxLength={2000}
-              className="w-full bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl p-3 sm:p-3.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 border border-slate-200/80 dark:border-slate-700/80 focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 resize-none transition-all block"
+              className="w-full bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 border border-slate-200/80 dark:border-slate-700/80 focus:border-blue-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 resize-none transition-all block"
             />
 
             {/* Media Preview Box */}
@@ -160,7 +160,7 @@ export const PostForm = ({ onPostCreated, isInsideModal = false }) => {
                 <button
                   type="button"
                   onClick={handleRemoveMedia}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-black text-white transition-colors cursor-pointer shadow-md"
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-black text-white transition-colors cursor-pointer"
                   aria-label="Remove media"
                 >
                   <X className="w-4 h-4" />
@@ -184,7 +184,7 @@ export const PostForm = ({ onPostCreated, isInsideModal = false }) => {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                   title="Upload Image or Video"
                 >
                   <Image className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -194,7 +194,7 @@ export const PostForm = ({ onPostCreated, isInsideModal = false }) => {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                   title="Upload Video"
                 >
                   <Video className="w-4 h-4 text-indigo-500 shrink-0" />
@@ -204,7 +204,7 @@ export const PostForm = ({ onPostCreated, isInsideModal = false }) => {
                 <button
                   type="button"
                   onClick={() => insertAtCursor('@')}
-                  className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer shrink-0"
                   title="Mention someone"
                 >
                   <AtSign className="w-3.5 h-3.5 shrink-0" />
@@ -214,7 +214,7 @@ export const PostForm = ({ onPostCreated, isInsideModal = false }) => {
                 <button
                   type="button"
                   onClick={() => insertAtCursor('#')}
-                  className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer shrink-0"
                   title="Add hashtag"
                 >
                   <Hash className="w-3.5 h-3.5 shrink-0" />
@@ -226,7 +226,7 @@ export const PostForm = ({ onPostCreated, isInsideModal = false }) => {
               <button
                 type="submit"
                 disabled={(!content.trim() && !selectedFile) || isCreating}
-                className="w-full sm:w-auto px-5 py-2.5 sm:py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-md shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                className="w-full sm:w-auto px-4 sm:px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
               >
                 {isCreating ? (
                   <Loader size="sm" className="text-white" />

@@ -31,10 +31,10 @@ export const ConfirmModal = ({
             onConfirm?.();
             onClose?.();
           }}
-          className={`px-4 py-2 text-sm font-medium rounded-xl text-white transition-colors shadow-xs ${
+          className={`px-4 py-2 text-sm font-medium rounded-xl text-white transition-colors ${
             isDanger
-              ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
-              : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+              ? 'bg-rose-600 hover:bg-rose-700'
+              : 'bg-blue-600 hover:bg-blue-700'
           }`}
         >
           {confirmText}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Lock, User, Mail, AlertCircle } from 'lucide-react';
+import { ArrowRight, Lock, User, Mail } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useToastStore from '../store/useToastStore';
 import Loader from '../components/common/Loader';
@@ -16,7 +16,6 @@ export const Register = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [localError, setLocalError] = useState('');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -26,7 +25,7 @@ export const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLocalError('');
+    if (isSubmitting) return;
 
     const cleanUsername = username.trim().toLowerCase();
     if (!cleanUsername) {
@@ -71,30 +70,21 @@ export const Register = () => {
     const result = await register(payload);
     if (result.success) {
       navigate('/', { replace: true });
-    } else {
-      setLocalError(result.error);
     }
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-10 px-4">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-8 shadow-xl transition-colors">
-        <div className="text-center mb-6 flex flex-col items-center">
+    <div className="min-h-[85vh] flex items-center justify-center py-6 sm:py-10 px-3 sm:px-4">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-8 shadow-xl transition-colors">
+        <div className="text-center mb-5 sm:mb-6 flex flex-col items-center">
           <Logo className="mb-3" />
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-            Join ConnectSphere
+            Join Connectly
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Create your account to start sharing and connecting
           </p>
         </div>
-
-        {localError && (
-          <div className="mb-4 flex items-center gap-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs border border-rose-200 dark:border-rose-900/50">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{localError}</span>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div>
@@ -165,7 +155,7 @@ export const Register = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
           >
             {isSubmitting ? (
               <Loader size="sm" className="text-white" />

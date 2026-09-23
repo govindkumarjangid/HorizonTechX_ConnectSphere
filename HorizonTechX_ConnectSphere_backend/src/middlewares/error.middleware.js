@@ -49,6 +49,24 @@ const normalizeError = (err) => {
     return { statusCode: 400, message, errors: [] };
   }
 
+  // Database connection / network errors (mask technical details from client)
+  if (
+    err.name === 'MongooseServerSelectionError' ||
+    err.name === 'MongoNetworkError' ||
+    err.code === 'ENOTFOUND' ||
+    err.code === 'ECONNREFUSED' ||
+    err.message?.includes('ENOTFOUND') ||
+    err.message?.includes('ECONNREFUSED') ||
+    err.message?.includes('getaddrinfo')
+  ) {
+    console.error('[Database Connection Error]:', err.message);
+    return {
+      statusCode: 503,
+      message: 'Database temporarily unavailable. Please try again shortly.',
+      errors: [],
+    };
+  }
+
   // anything else is a bug, do not leak details in production
   return {
     statusCode: 500,

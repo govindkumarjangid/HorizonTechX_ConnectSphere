@@ -1,11 +1,13 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { MoreHorizontal, MessageCircle, Trash2, Edit3 } from 'lucide-react';
+import { MoreHorizontal, MessageCircle, Trash2, Edit3, Share2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import Avatar from '../users/Avatar';
 import LikeButton from './LikeButton';
 import FormattedText from './FormattedText';
 import ErrorBoundary from '../common/ErrorBoundary';
 import Loader from '../common/Loader';
+import useToastStore from '../../store/useToastStore';
 
 const CommentList = lazy(() => import('../comments/CommentList'));
 const ConfirmModal = lazy(() => import('../common/ConfirmModal'));
@@ -25,13 +27,70 @@ const PostCardComponent = ({ post, onDelete }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const menuRef = useRef(null);
 
   const isAuthor =
     post.author?._id === currentUser?._id ||
     post.author?.username === currentUser?.username;
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
   const handleToggleLike = async () => {
     await toggleLike(post._id);
+  };
+
+  const handleShare = async (e) => {
+    e?.stopPropagation?.();
+    setIsMenuOpen(false);
+    const postUrl = `${window.location.origin}/?post=${post._id}`;
+    const authorName = post.author?.fullName || `@${post.author?.username}` || 'User';
+    const textSnippet = post.content ? post.content.slice(0, 100) : 'Check out this post on Connectly';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${authorName} on Connectly`,
+          text: textSnippet,
+          url: postUrl,
+        });
+        useToastStore.getState().success('Post shared successfully!');
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(postUrl);
+      } else {
+        const input = document.createElement('textarea');
+        input.value = postUrl;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
+      useToastStore.getState().success('Post link copied to clipboard!');
+    } catch {
+      useToastStore.getState().error('Could not copy link');
+    }
   };
 
   const handleDelete = async () => {
@@ -45,7 +104,7 @@ const PostCardComponent = ({ post, onDelete }) => {
   };
 
   return (
-    <article className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs mb-4 transition-colors">
+    <article className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 p-3.5 sm:p-5 shadow-xs mb-2.5 sm:mb-4 transition-colors">
       {/* Post Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -70,46 +129,67 @@ const PostCardComponent = ({ post, onDelete }) => {
           </div>
         </div>
 
-        {/* Post Options Menu (Delete for author) */}
-        {isAuthor && (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              aria-label="Post options"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
+        {/* Post Options Menu (Public to all for Share, plus Edit & Delete for author) */}
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label="Post options"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
 
+          <AnimatePresence>
             {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-1 z-30 animate-in fade-in zoom-in-95 duration-100">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: -6 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -6 }}
+                transition={{ duration: 0.16, ease: 'easeOut' }}
+                style={{ transformOrigin: 'top right' }}
+                className="absolute right-0 top-full mt-1 w-38 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-30 overflow-hidden"
+              >
+                {/* Share Post (Public to everyone) */}
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    setIsEditModalOpen(true);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-left font-medium cursor-pointer"
+                  onClick={handleShare}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-left font-medium cursor-pointer transition-colors"
                 >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Edit Post</span>
+                  <Share2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>Share Post</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    setIsDeleteModalOpen(true);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left font-medium cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Post</span>
-                </button>
-              </div>
+
+                {isAuthor && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setIsEditModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-left font-medium cursor-pointer transition-colors"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Edit Post</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setIsDeleteModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-left font-medium cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Post</span>
+                    </button>
+                  </>
+                )}
+              </motion.div>
             )}
-          </div>
-        )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Post Text Content with @mentions and #hashtags */}
@@ -121,28 +201,28 @@ const PostCardComponent = ({ post, onDelete }) => {
 
       {/* Media Attachment (Image or Video from Cloudinary) */}
       {post.media?.url && (
-        <div className="rounded-2xl overflow-hidden mb-3.5 bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-800 flex items-center justify-center">
+        <div className="rounded-xl sm:rounded-2xl overflow-hidden mb-3 bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-800 flex items-center justify-center">
           {post.media.mediaType === 'video' ? (
             <video
               src={post.media.url}
               controls
               playsInline
               preload="metadata"
-              className="w-full max-h-[480px] object-contain bg-black rounded-2xl"
+              className="w-full max-h-[380px] sm:max-h-[480px] object-contain bg-black rounded-xl sm:rounded-2xl"
             />
           ) : (
             <img
               src={post.media.url}
               alt="Post attachment"
               loading="lazy"
-              className="w-full max-h-[500px] object-cover rounded-2xl"
+              className="w-full max-h-[400px] sm:max-h-[500px] object-cover rounded-xl sm:rounded-2xl"
             />
           )}
         </div>
       )}
 
-      {/* Action Bar (Like & Comments) */}
-      <div className="flex items-center gap-6 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
+      {/* Action Bar (Like, Comments & Share) */}
+      <div className="flex items-center gap-4 sm:gap-6 pt-2 sm:pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
         {/* Like Button */}
         <LikeButton
           isLiked={post.isLiked}
@@ -158,6 +238,18 @@ const PostCardComponent = ({ post, onDelete }) => {
         >
           <MessageCircle className="w-4 h-4 stroke-[2]" />
           <span>{post.commentsCount || 0}</span>
+        </button>
+
+        {/* Share Button */}
+        <button
+          type="button"
+          onClick={handleShare}
+          className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer py-1"
+          title="Share Post"
+          aria-label="Share post"
+        >
+          <Share2 className="w-4 h-4 stroke-[2]" />
+          <span>Share</span>
         </button>
       </div>
 
