@@ -1,11 +1,11 @@
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './store/useThemeStore';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
+import { LayoutSkeleton } from './components/common/Loader';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Toast from './components/common/Toast';
-import Loader, { LayoutSkeleton } from './components/common/Loader';
 import Layout from './components/layout/Layout';
 
 const Feed = lazy(() => import('./pages/Feed'));
