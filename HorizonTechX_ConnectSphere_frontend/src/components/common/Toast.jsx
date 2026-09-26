@@ -55,7 +55,7 @@ export const Toast = () => {
           <Avatar src={fromUser?.avatar} alt={fromUser?.username} size="sm" />
           <div className="flex-1 min-w-0 flex items-center gap-2">
             <div className="shrink-0">{icon}</div>
-            <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-100 break-words leading-snug">{text}</div>
+            <div className="text-xs sm:text-sm text-slate-800 dark:text-slate-100 wrap-break-words leading-snug">{text}</div>
           </div>
         </>
       );
@@ -74,8 +74,8 @@ export const Toast = () => {
 
     return (
       <div className="flex-1 min-w-0 flex items-start gap-2.5">
-        <Icon className={`w-4 h-4 flex-shrink-0 mt-0.5 ${iconClass}`} />
-        <div className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 break-words leading-snug">
+        <Icon className={`w-4 h-4 shrink-0 mt-0.5 ${iconClass}`} />
+        <div className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-100 wrap-break-words leading-snug">
           {message}
         </div>
       </div>
@@ -99,7 +99,7 @@ export const Toast = () => {
             <button
               type="button"
               onClick={() => removeToast(toast.id)}
-              className="p-1 -mr-1 -mt-0.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex-shrink-0"
+              className="p-1 -mr-1 -mt-0.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
               aria-label="Dismiss toast"
             >
               <X className="w-3.5 h-3.5" />

@@ -1,10 +1,9 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 
 export const LikeButton = ({ isLiked = false, likesCount = 0, onToggle }) => {
   const count = typeof likesCount === 'number' ? Math.max(0, likesCount) : 0;
-  // A post with 0 likes is never active/liked
+
   const active = Boolean(isLiked && count > 0);
 
   return (
@@ -30,7 +29,7 @@ export const LikeButton = ({ isLiked = false, likesCount = 0, onToggle }) => {
           className={`w-4 h-4 transition-colors ${
             active
               ? 'fill-rose-500 text-rose-500'
-              : 'text-slate-500 dark:text-slate-400 group-hover:text-rose-500 stroke-[2]'
+              : 'text-slate-500 dark:text-slate-400 group-hover:text-rose-500 stroke-2'
           }`}
         />
       </motion.div>

@@ -15,7 +15,6 @@ export const MobileNav = ({ onOpenCompose }) => {
       }}
       className="md:hidden fixed bottom-0 inset-x-0 z-40 px-4 pt-1.5 flex items-center justify-around"
     >
-      {/* Downward solid background extension filling from 51px down to 112px below nav — ensures circular notch cradle remains 100% round without bottom clipping */}
       <div className="absolute inset-x-0 top-12.75 -bottom-28 bg-white dark:bg-slate-900 -z-20 pointer-events-none" />
 
       {/* Left Top Border & Solid Background */}

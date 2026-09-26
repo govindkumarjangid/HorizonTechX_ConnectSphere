@@ -1,11 +1,3 @@
-import React from 'react';
-
-/**
- * Theme-adaptive logo component.
- * The icon mark stays always blue/yellow.
- * The "Connectly" text fill uses `currentColor` so it respects
- * Tailwind's text-slate-900 (light) and text-white (dark) class.
- */
 export const Logo = ({ className = '' }) => {
   return (
     <svg

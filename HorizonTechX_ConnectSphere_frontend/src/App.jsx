@@ -5,7 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Toast from './components/common/Toast';
-import Loader from './components/common/Loader';
+import Loader, { LayoutSkeleton } from './components/common/Loader';
 import Layout from './components/layout/Layout';
 
 const Feed = lazy(() => import('./pages/Feed'));
@@ -16,23 +16,14 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 
 import useAuthStore from './store/useAuthStore';
 
-const RouteFallback = () => (
-  <div className="w-full min-h-[50vh] flex items-center justify-center">
-    <Loader size="lg" />
-  </div>
-);
+const RouteFallback = () => <LayoutSkeleton />;
 
 const PublicRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isLoading = useAuthStore((state) => state.isLoading);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader size="lg" />
-      </div>
-    );
-  }
+  if (isLoading)
+    return <LayoutSkeleton />;
 
   return isAuthenticated ? <Navigate to="/" replace /> : children;
 };

@@ -45,20 +45,15 @@ export const EditPostModal = ({ isOpen, onClose, post }) => {
       setExistingMedia(post.media || null);
       setRemoveMedia(false);
       setSelectedFile(null);
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
       setMediaType(post.media?.mediaType || null);
     }
   }, [isOpen, post]);
 
-  // Clean up object URL when unmounting
   useEffect(() => {
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
 
@@ -84,9 +79,7 @@ export const EditPostModal = ({ isOpen, onClose, post }) => {
       return;
     }
 
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
 
     setSelectedFile(file);
     setMediaType(isVideo ? 'video' : 'image');
@@ -96,20 +89,14 @@ export const EditPostModal = ({ isOpen, onClose, post }) => {
   const handleRemoveExistingMedia = () => {
     setExistingMedia(null);
     setRemoveMedia(true);
-    if (!selectedFile) {
-      setMediaType(null);
-    }
+    if (!selectedFile) setMediaType(null);
   };
 
   const handleRemoveNewMedia = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setSelectedFile(null);
     setPreviewUrl(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setMediaType(existingMedia?.mediaType || null);
   };
 
@@ -128,9 +115,7 @@ export const EditPostModal = ({ isOpen, onClose, post }) => {
       const formData = new FormData();
       formData.append('content', trimmed);
       formData.append('media', selectedFile);
-      if (removeMedia) {
-        formData.append('removeMedia', 'true');
-      }
+      if (removeMedia) formData.append('removeMedia', 'true');
       payload = formData;
     } else {
       payload = {
@@ -140,9 +125,7 @@ export const EditPostModal = ({ isOpen, onClose, post }) => {
     }
 
     const res = await updatePost(post._id, payload);
-    if (res.success) {
-      onClose?.();
-    }
+    if (res.success) onClose?.();
   };
 
   return (

@@ -58,9 +58,8 @@ export const Navbar = () => {
       ) {
         setIsNotifOpen(false);
       }
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target))
         setIsProfileMenuOpen(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside);
@@ -308,9 +307,8 @@ export const Navbar = () => {
                 @{user?.username}
               </span>
               <ChevronDown
-                className={`w-3.5 h-3.5 text-slate-500 dark:text-slate-400 stroke-[2.5] transition-transform duration-200 ${
-                  isProfileMenuOpen ? 'rotate-180' : ''
-                }`}
+                className={`w-3.5 h-3.5 text-slate-500 dark:text-slate-400 stroke-[2.5] transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''
+                  }`}
               />
             </button>
 

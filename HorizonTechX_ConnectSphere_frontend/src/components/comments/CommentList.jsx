@@ -21,22 +21,16 @@ export const CommentList = ({ postId, postAuthorId }) => {
   const deleteComment = useCommentStore((state) => state.deleteComment);
 
   useEffect(() => {
-    if (postId) {
-      fetchComments(postId);
-    }
+    if (postId) fetchComments(postId);
   }, [postId, fetchComments]);
 
   const handleAddComment = useCallback(
-    async (text) => {
-      await addComment(postId, text);
-    },
+    async (text) => await addComment(postId, text),
     [postId, addComment]
   );
 
   const handleDeleteComment = useCallback(
-    async (commentId) => {
-      await deleteComment(postId, commentId);
-    },
+    async (commentId) => await deleteComment(postId, commentId),
     [postId, deleteComment]
   );
 

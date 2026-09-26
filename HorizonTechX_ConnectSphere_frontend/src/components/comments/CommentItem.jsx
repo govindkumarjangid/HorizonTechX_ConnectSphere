@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import Avatar from '../users/Avatar';
@@ -34,7 +33,7 @@ export const CommentItem = ({ comment, postAuthorId, onDelete }) => {
               {formatRelativeTime(comment.createdAt)}
             </span>
           </div>
-          <p className="text-xs text-slate-700 dark:text-slate-300 mt-0.5 break-words">
+          <p className="text-xs text-slate-700 dark:text-slate-300 mt-0.5 wrap-break-words line-clamp-1">
             {comment.text}
           </p>
         </div>

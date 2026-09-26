@@ -45,7 +45,7 @@ export const Avatar = ({
   return (
     <div
       onClick={onClick}
-      className={`relative inline-flex items-center justify-center flex-shrink-0 select-none rounded-full ${sizeClasses} ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`relative inline-flex items-center justify-center shrink-0 select-none rounded-full ${sizeClasses} ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {src && !hasError ? (
         <img

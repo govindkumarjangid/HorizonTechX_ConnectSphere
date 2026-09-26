@@ -19,7 +19,6 @@ export const PostForm = ({ onPostCreated, isInsideModal = false }) => {
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Insert @ or # at cursor position in textarea
   const insertAtCursor = (symbol) => {
     const el = textareaRef.current;
     if (!el) return;

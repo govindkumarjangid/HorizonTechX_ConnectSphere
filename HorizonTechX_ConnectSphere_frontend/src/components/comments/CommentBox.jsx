@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Send } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import Avatar from '../users/Avatar';

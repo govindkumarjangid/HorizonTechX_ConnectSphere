@@ -15,13 +15,13 @@ export const ProfileHeader = ({
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-xs mb-3 sm:mb-5 transition-colors">
       {/* Cover Banner */}
-      <div className="h-24 sm:h-36 w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500" />
+      <div className="h-24 sm:h-36 w-full bg-linear-to-r from-blue-600 via-indigo-600 to-sky-500" />
 
       {/* Main Profile Info */}
       <div className="px-3.5 sm:px-6 pb-3.5 sm:pb-5 relative">
         <div className="flex items-end justify-between mb-3.5 sm:mb-4 gap-3">
           {/* Avatar overlapping banner — tightly circular, border directly hugs the image */}
-          <div className="-mt-10 sm:-mt-14 relative z-10 flex-shrink-0">
+          <div className="-mt-10 sm:-mt-14 relative z-10 shrink-0">
             {user?.avatar ? (
               <img
                 src={user.avatar}

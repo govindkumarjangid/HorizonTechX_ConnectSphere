@@ -63,16 +63,34 @@ const getSuggestions = async (currentUserId, limit = 5) => {
   const followingIds = await Follow.find({ follower: currentUserId }).distinct('following');
   const excludeIds = [...followingIds, currentUserId];
 
-  const suggestions = await User.find({ _id: { $nin: excludeIds } })
+  const unfollowedUsers = await User.find({ _id: { $nin: excludeIds } })
     .select(PUBLIC_FIELDS)
-    .sort({ createdAt: -1 })
+    .sort({ followersCount: -1, createdAt: -1 })
     .limit(limit)
     .lean();
 
-  return suggestions.map((u) => ({
+  let result = unfollowedUsers.map((u) => ({
     ...u,
     isFollowing: false,
   }));
+
+  if (result.length < limit) {
+    const existingIds = [currentUserId, ...result.map((u) => u._id)];
+    const fallbackUsers = await User.find({ _id: { $nin: existingIds } })
+      .select(PUBLIC_FIELDS)
+      .sort({ followersCount: -1, postsCount: -1, createdAt: -1 })
+      .limit(limit - result.length)
+      .lean();
+
+    const fallbackFormatted = fallbackUsers.map((u) => ({
+      ...u,
+      isFollowing: followingIds.some((id) => String(id) === String(u._id)),
+    }));
+
+    result = [...result, ...fallbackFormatted];
+  }
+
+  return result;
 };
 
 export default {

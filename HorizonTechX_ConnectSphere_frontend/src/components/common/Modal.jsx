@@ -12,9 +12,7 @@ export const Modal = ({
 }) => {
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose?.();
-      }
+      if (e.key === 'Escape' && isOpen) onClose?.();
     };
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -61,12 +59,12 @@ export const Modal = ({
             aria-modal="true"
           >
             {/* Mobile Grab Handle */}
-            <div className="pt-2 sm:hidden flex justify-center flex-shrink-0">
+            <div className="pt-2 sm:hidden flex justify-center shrink-0">
               <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
             </div>
 
             {title && (
-              <div className="flex items-center justify-between px-3.5 sm:px-6 py-2.5 sm:py-4 border-b border-slate-100 dark:border-slate-800/80 flex-shrink-0">
+              <div className="flex items-center justify-between px-3.5 sm:px-6 py-2.5 sm:py-4 border-b border-slate-100 dark:border-slate-800/80 shrink-0">
                 <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
                   {title}
                 </h3>

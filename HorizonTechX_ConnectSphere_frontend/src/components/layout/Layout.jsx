@@ -14,7 +14,7 @@ export const Layout = ({ children, hideSidebars = false }) => {
     <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl 2xl:max-w-[1400px] w-full mx-auto px-2 sm:px-6 lg:px-8 py-2.5 sm:py-6">
+      <main className="flex-1 max-w-7xl 2xl:max-w-350 w-full mx-auto px-2 sm:px-6 lg:px-8 py-2.5 sm:py-6">
         {hideSidebars ? (
           <div className="w-full pb-20 md:pb-6">{children || <Outlet />}</div>
         ) : (

@@ -16,10 +16,6 @@ export const RightSidebar = () => {
     fetchSuggestions(5);
   }, [fetchSuggestions]);
 
-  if (!isLoading && suggestions.length === 0) {
-    return null;
-  }
-
   return (
     <aside className="w-full space-y-4">
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs transition-colors">
@@ -42,6 +38,10 @@ export const RightSidebar = () => {
               </div>
             ))}
           </div>
+        ) : suggestions.length === 0 ? (
+          <p className="text-xs text-slate-400 dark:text-slate-500 py-3 text-center">
+            No suggestions available right now.
+          </p>
         ) : (
           <div className="space-y-3.5">
             {suggestions.map((u) => (

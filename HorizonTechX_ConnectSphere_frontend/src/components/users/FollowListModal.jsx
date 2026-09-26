@@ -92,12 +92,12 @@ export const FollowListModal = ({ isOpen, onClose, username, type = 'followers' 
             className="relative w-full max-w-md max-h-[90dvh] sm:max-h-[80vh] flex flex-col bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden z-10"
           >
             {/* Mobile grab handle */}
-            <div className="pt-2 sm:hidden flex justify-center flex-shrink-0">
+            <div className="pt-2 sm:hidden flex justify-center shrink-0">
               <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-3.5 sm:px-5 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+            <div className="flex items-center justify-between px-3.5 sm:px-5 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{title}</h3>
@@ -133,7 +133,7 @@ export const FollowListModal = ({ isOpen, onClose, username, type = 'followers' 
                       <button
                         type="button"
                         onClick={() => handleUserClick(user.username)}
-                        className="flex-shrink-0 cursor-pointer"
+                        className="shrink-0 cursor-pointer"
                       >
                         <Avatar src={user.avatar} alt={user.username} size="md" />
                       </button>
@@ -151,7 +151,7 @@ export const FollowListModal = ({ isOpen, onClose, username, type = 'followers' 
                         )}
                       </button>
                       {!user.isSelf && (
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                           <FollowButton
                             isFollowing={user.isFollowing}
                             onToggle={() => handleFollowToggle(user)}

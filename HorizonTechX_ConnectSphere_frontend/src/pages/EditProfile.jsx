@@ -109,7 +109,7 @@ export const EditProfile = ({ isOpen, onClose, onProfileUpdated }) => {
 
         {/* Real Avatar File Upload with Live Preview */}
         <div className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
-          <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full flex-shrink-0 overflow-hidden ring-2 ring-slate-200 dark:ring-slate-700 shadow-xs group">
+          <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full shrink-0 overflow-hidden ring-2 ring-slate-200 dark:ring-slate-700 shadow-xs group">
             {avatarPreview || user?.avatar ? (
               <img
                 src={avatarPreview || user?.avatar}

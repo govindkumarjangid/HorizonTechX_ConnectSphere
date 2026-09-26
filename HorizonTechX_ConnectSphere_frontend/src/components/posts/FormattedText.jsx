@@ -1,16 +1,7 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 
-/**
- * Parses post content and converts:
- * - @username → clickable profile link (blue)
- * - #hashtag → styled hashtag span (indigo)
- * Everything else is rendered as plain text.
- */
 export const FormattedText = ({ text = '', className = '' }) => {
   if (!text) return null;
-
-  // Split on @mentions and #hashtags while keeping the delimiters
   const parts = text.split(/(@[a-zA-Z0-9_.]+|#[a-zA-Z0-9_]+)/g);
 
   return (

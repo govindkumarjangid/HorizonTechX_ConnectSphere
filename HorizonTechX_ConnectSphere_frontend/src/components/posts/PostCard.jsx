@@ -37,9 +37,8 @@ const PostCardComponent = ({ post, onDelete }) => {
   useEffect(() => {
     if (!isMenuOpen) return;
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (menuRef.current && !menuRef.current.contains(e.target))
         setIsMenuOpen(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside);
@@ -208,14 +207,14 @@ const PostCardComponent = ({ post, onDelete }) => {
               controls
               playsInline
               preload="metadata"
-              className="w-full max-h-[380px] sm:max-h-[480px] object-contain bg-black rounded-xl sm:rounded-2xl"
+              className="w-full max-h-95 sm:max-h-120 object-contain bg-black rounded-xl sm:rounded-2xl"
             />
           ) : (
             <img
               src={post.media.url}
               alt="Post attachment"
               loading="lazy"
-              className="w-full max-h-[400px] sm:max-h-[500px] object-cover rounded-xl sm:rounded-2xl"
+              className="w-full max-h-100 sm:max-h-125 object-cover rounded-xl sm:rounded-2xl"
             />
           )}
         </div>
@@ -236,7 +235,7 @@ const PostCardComponent = ({ post, onDelete }) => {
           onClick={() => setShowComments(!showComments)}
           className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer py-1"
         >
-          <MessageCircle className="w-4 h-4 stroke-[2]" />
+          <MessageCircle className="w-4 h-4 stroke-2" />
           <span>{post.commentsCount || 0}</span>
         </button>
 
@@ -248,7 +247,7 @@ const PostCardComponent = ({ post, onDelete }) => {
           title="Share Post"
           aria-label="Share post"
         >
-          <Share2 className="w-4 h-4 stroke-[2]" />
+          <Share2 className="w-4 h-4 stroke-2" />
           <span>Share</span>
         </button>
       </div>
