@@ -5,9 +5,8 @@ import { emitNotification, emitFollowUpdated } from '../socket.js';
 const USER_FIELDS = 'username bio avatar followersCount followingCount';
 
 const follow = async (currentUser, targetUserId) => {
-  if (String(currentUser._id) === String(targetUserId)) {
+  if (String(currentUser._id) === String(targetUserId))
     throw ApiError.badRequest('You cannot follow yourself');
-  }
 
   const targetUser = await User.findById(targetUserId);
   if (!targetUser) throw ApiError.notFound('User not found');
@@ -17,9 +16,8 @@ const follow = async (currentUser, targetUserId) => {
     following: targetUserId,
   });
 
-  if (existing) {
+  if (existing)
     throw ApiError.conflict('You already follow this user');
-  }
 
   await Follow.create({
     follower: currentUser._id,
@@ -70,9 +68,8 @@ const unfollow = async (currentUserId, targetUserId) => {
     following: targetUserId,
   });
 
-  if (!removed) {
+  if (!removed)
     throw ApiError.badRequest('You are not following this user');
-  }
 
   const [updatedTarget, updatedCurrent] = await Promise.all([
     User.findByIdAndUpdate(

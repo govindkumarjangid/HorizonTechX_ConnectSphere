@@ -9,25 +9,21 @@ const api = axios.create({
 });
 
 // Attach JWT token to requests
-api.interceptors.request.use(
-  (request) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('cs_token');
-    if (token)
-      request.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use((request) => {
+  const token = localStorage.getItem('token') || localStorage.getItem('cs_token');
+  if (token)
+    request.headers.Authorization = `Bearer ${token}`;
 
-    // If payload is FormData, let browser set multipart/form-data with boundary
-    if (request.data instanceof FormData) {
-      delete request.headers['Content-Type'];
-    }
+  if (request.data instanceof FormData)
+    delete request.headers['Content-Type'];
 
-    return request;
-  },
+  return request;
+},
   (error) => Promise.reject(error)
 );
 
 // Global 401 Unauthorized handler
-api.interceptors.response.use(
-  (response) => response,
+api.interceptors.response.use((response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');

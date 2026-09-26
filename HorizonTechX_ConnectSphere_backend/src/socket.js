@@ -37,7 +37,6 @@ export const initSocket = (httpServer) => {
   io.on('connection', (socket) => {
     const userRoom = `user:${socket.userId}`;
     socket.join(userRoom);
-
     socket.on('disconnect', () => {
       socket.leave(userRoom);
     });

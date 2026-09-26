@@ -2,8 +2,8 @@ import ApiError from '../utils/ApiError.js';
 import { User, Follow } from '../models/index.js';
 import { uploadMedia } from '../configs/cloudinary.config.js';
 import { emitProfileUpdated } from '../socket.js';
+import { PUBLIC_FIELDS } from '../constents.js';
 
-const PUBLIC_FIELDS = 'fullName username bio website avatar followersCount followingCount postsCount createdAt';
 
 const getProfile = async (username, currentUserId) => {
   const user = await User.findOne({ username: username.toLowerCase() }).select(PUBLIC_FIELDS);
@@ -35,28 +35,23 @@ const updateProfile = async (userId, { fullName, username, bio, avatar, website 
     user.avatar = avatar.trim();
   }
 
-  if (fullName !== undefined) {
+  if (fullName !== undefined)
     user.fullName = fullName.trim();
-  }
 
   if (username !== undefined) {
     const normalized = username.trim().toLowerCase();
     if (normalized !== user.username) {
       const existing = await User.findOne({ username: normalized });
-      if (existing) {
+      if (existing)
         throw ApiError.conflict('Username is already taken');
-      }
       user.username = normalized;
     }
   }
 
-  if (bio !== undefined) {
-    user.bio = bio.trim();
-  }
+  if (bio !== undefined) user.bio = bio.trim();
 
-  if (website !== undefined) {
+  if (website !== undefined)
     user.website = typeof website === 'string' ? website.trim() : '';
-  }
 
   await user.save();
   const userJson = user.toJSON();

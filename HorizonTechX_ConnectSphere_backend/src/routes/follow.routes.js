@@ -9,9 +9,9 @@ const router = Router();
 
 router.use(protect);
 
-router.post('/:userId', mongoIdParam('userId'), validate, followController.follow);
-router.delete('/:userId', mongoIdParam('userId'), validate, followController.unfollow);
-router.get('/:username/followers', usernameParam, paginationRules, validate, followController.getFollowers);
-router.get('/:username/following', usernameParam, paginationRules, validate, followController.getFollowing);
+router.route('/:userId').post(mongoIdParam('userId'), validate, followController.follow);
+router.route('/:userId').delete(mongoIdParam('userId'), validate, followController.unfollow);
+router.route('/:username/followers').get(usernameParam, paginationRules, validate, followController.getFollowers);
+router.route('/:username/following').get(usernameParam, paginationRules, validate, followController.getFollowing);
 
 export default router;

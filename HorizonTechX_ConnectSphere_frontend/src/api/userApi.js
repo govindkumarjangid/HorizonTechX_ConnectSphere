@@ -7,16 +7,14 @@ export const userApi = {
     try {
       return await api.patch('/users/profile', profileData);
     } catch (err) {
-      // If PATCH is blocked by any intermediary/proxy, fallback seamlessly to PUT
       const isMethodOrNetworkError =
         !err.response ||
         err.response?.status === 405 ||
         err.message?.includes('Network Error') ||
         err.message?.includes('ERR_FAILED');
 
-      if (isMethodOrNetworkError) {
+      if (isMethodOrNetworkError)
         return await api.put('/users/profile', profileData);
-      }
       throw err;
     }
   },

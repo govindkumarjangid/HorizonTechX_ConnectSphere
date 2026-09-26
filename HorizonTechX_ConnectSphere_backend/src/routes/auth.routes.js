@@ -6,9 +6,9 @@ import { registerRules, loginRules } from '../validators/auth.validator.js';
 
 const router = Router();
 
-router.post('/register', registerRules, validate, authController.register);
-router.post('/login', loginRules, validate, authController.login);
-router.post('/logout', authController.logout);
-router.get('/me', protect, authController.getMe);
+router.route('/register').post(registerRules, validate, authController.register);
+router.route('/login').post(loginRules, validate, authController.login);
+router.route('/logout').post(authController.logout);
+router.route('/me').get(protect, authController.getMe);
 
 export default router;

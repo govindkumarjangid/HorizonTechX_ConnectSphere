@@ -1,9 +1,8 @@
 import Follow from '../models/Follow.model.js';
-
-const USER_FIELDS = 'username fullName bio avatar';
+import { USER_FIELDS } from "../constents.js"
 
 const followRepository = {
- 
+
   create(followerId, followingId) {
     return Follow.create({ follower: followerId, following: followingId });
   },

@@ -6,17 +6,15 @@ const register = async ({ fullName = '', username, email = null, password, bio =
   const normalizedUsername = username.trim().toLowerCase();
 
   const existingUsername = await User.findOne({ username: normalizedUsername });
-  if (existingUsername) {
+  if (existingUsername)
     throw ApiError.conflict('Username is already taken');
-  }
 
   let normalizedEmail = null;
   if (email && typeof email === 'string' && email.trim()) {
     normalizedEmail = email.trim().toLowerCase();
     const existingEmail = await User.findOne({ email: normalizedEmail });
-    if (existingEmail) {
+    if (existingEmail)
       throw ApiError.conflict('Email is already registered');
-    }
   }
 
   const passwordHash = await User.hashPassword(password);
@@ -40,14 +38,12 @@ const login = async ({ identifier, username, email, password }) => {
     $or: [{ username: loginId }, { email: loginId }],
   }).select('+passwordHash');
 
-  if (!user) {
+  if (!user)
     throw ApiError.unauthorized('Invalid username/email or password');
-  }
 
   const matches = await user.comparePassword(password);
-  if (!matches) {
+  if (!matches)
     throw ApiError.unauthorized('Invalid username/email or password');
-  }
 
   const token = generateAccessToken(user._id);
   const userObj = user.toJSON();

@@ -13,17 +13,11 @@ if (env.cloudinary.enabled) {
 }
 
 const assertEnabled = () => {
-  if (!env.cloudinary.enabled) {
+  if (!env.cloudinary.enabled)
     throw new ApiError(503, 'Media upload is not configured on the server');
-  }
 };
 
-/**
- * Upload buffer to Cloudinary (image or video)
- * @param {Buffer} buffer
- * @param {Object} options { type: 'avatar' | 'post', mimetype: string }
- * @returns {Promise<{ url: string, publicId: string, mediaType: 'image' | 'video' }>}
- */
+
 export const uploadMedia = (buffer, { type = 'post', mimetype = 'image/jpeg' } = {}) => {
   assertEnabled();
 
@@ -36,9 +30,8 @@ export const uploadMedia = (buffer, { type = 'post', mimetype = 'image/jpeg' } =
     resource_type: isVideo ? 'video' : 'image',
   };
 
-  if (!isVideo && preset.transformation) {
+  if (!isVideo && preset.transformation)
     uploadOptions.transformation = preset.transformation;
-  }
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(uploadOptions, (error, result) => {
@@ -61,11 +54,7 @@ export const uploadImage = (buffer, type = 'post') => {
   return uploadMedia(buffer, { type, mimetype: 'image/jpeg' });
 };
 
-/**
- * Delete media from Cloudinary
- * @param {string} publicId
- * @param {'image' | 'video'} mediaType
- */
+
 export const deleteMedia = async (publicId, mediaType = 'image') => {
   if (!publicId || !env.cloudinary.enabled) return false;
 

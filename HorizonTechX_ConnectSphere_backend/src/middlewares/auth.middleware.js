@@ -22,9 +22,8 @@ export const protect = asyncHandler(async (req, _res, next) => {
   }
 
   const user = await User.findById(decoded._id);
-  if (!user) {
+  if (!user)
     throw ApiError.unauthorized('User not found');
-  }
 
   req.user = user;
   next();

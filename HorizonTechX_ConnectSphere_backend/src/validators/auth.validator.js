@@ -41,9 +41,8 @@ export const loginRules = [
   body('identifier')
     .custom((value, { req }) => {
       const id = value || req.body.username || req.body.email;
-      if (!id || typeof id !== 'string' || !id.trim()) {
+      if (!id || typeof id !== 'string' || !id.trim())
         throw new Error('Username or email is required');
-      }
       return true;
     }),
 ];

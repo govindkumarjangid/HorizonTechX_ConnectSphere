@@ -9,8 +9,8 @@ const router = Router({ mergeParams: true });
 
 router.use(protect);
 
-router.post('/', mongoIdParam('postId'), addCommentRules, validate, commentController.addComment);
-router.get('/', mongoIdParam('postId'), paginationRules, validate, commentController.getComments);
-router.delete('/:commentId', mongoIdParam('postId'), mongoIdParam('commentId'), validate, commentController.deleteComment);
+router.route('/').post(mongoIdParam('postId'), addCommentRules, validate, commentController.addComment);
+router.route('/').get(mongoIdParam('postId'), paginationRules, validate, commentController.getComments);
+router.route('/:commentId').delete(mongoIdParam('postId'), mongoIdParam('commentId'), validate, commentController.deleteComment);
 
 export default router;

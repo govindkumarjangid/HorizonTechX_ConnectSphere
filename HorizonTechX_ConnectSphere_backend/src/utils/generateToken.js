@@ -3,9 +3,8 @@ import env from '../configs/env.config.js';
 
 const getAccessSecret = () => {
   const secret = env.jwt?.accessSecret;
-  if (!secret) {
+  if (!secret)
     throw new Error('ACCESS_TOKEN_SECRET must be configured');
-  }
   return secret;
 };
 

@@ -58,8 +58,6 @@ const start = async () => {
     startKeepAliveCron();
   });
 
-  // Render/AWS load balancers keep connections open longer than Node's 5s default,
-  // which causes random 502 errors
   server.keepAliveTimeout = 65_000;
   server.headersTimeout = 66_000;
 

@@ -8,8 +8,7 @@ import {
   emitPostUpdated,
 } from '../socket.js';
 import { uploadMedia, deleteMedia } from '../configs/cloudinary.config.js';
-
-const AUTHOR_FIELDS = 'username avatar fullName';
+import { AUTHOR_FIELDS } from '../constents.js';
 
 const createPost = async (userId, { content = '' } = {}, file = null) => {
   const trimmed = String(content || '').trim();
@@ -27,9 +26,8 @@ const createPost = async (userId, { content = '' } = {}, file = null) => {
     };
   }
 
-  if (!trimmed && !media) {
+  if (!trimmed && !media)
     throw ApiError.badRequest('Post must contain text content or media');
-  }
 
   const post = await Post.create({
     author: userId,
@@ -52,15 +50,13 @@ const deletePost = async (postId, userId) => {
   const post = await Post.findById(postId);
   if (!post) throw ApiError.notFound('Post not found');
 
-  if (String(post.author) !== String(userId)) {
+  if (String(post.author) !== String(userId))
     throw ApiError.forbidden('You can only delete your own posts');
-  }
 
-  if (post.media?.publicId) {
+  if (post.media?.publicId)
     deleteMedia(post.media.publicId, post.media.mediaType).catch((err) => {
       console.error('Failed to delete post media from Cloudinary:', err?.message);
     });
-  }
 
   await Post.findByIdAndDelete(postId);
   emitPostDeleted(postId);
@@ -213,9 +209,8 @@ const updatePost = async (postId, userId, { content } = {}, file = null, removeM
   const post = await Post.findById(postId);
   if (!post) throw ApiError.notFound('Post not found');
 
-  if (String(post.author) !== String(userId)) {
+  if (String(post.author) !== String(userId))
     throw ApiError.forbidden('You can only edit your own posts');
-  }
 
   // If user requested to remove existing media or upload replacement
   if (removeMedia && post.media?.publicId) {
@@ -243,13 +238,11 @@ const updatePost = async (postId, userId, { content } = {}, file = null, removeM
     };
   }
 
-  if (content !== undefined) {
+  if (content !== undefined)
     post.content = String(content).trim();
-  }
 
-  if (!post.content && !post.media?.url) {
+  if (!post.content && !post.media?.url)
     throw ApiError.badRequest('Post cannot be empty without text or media');
-  }
 
   await post.save();
 

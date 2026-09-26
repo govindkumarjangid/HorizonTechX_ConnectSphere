@@ -11,13 +11,13 @@ const router = Router();
 
 router.use(protect);
 
-router.post('/', uploadMedia, createPostRules, validate, postController.createPost);
-router.get('/', paginationRules, validate, postController.getFeed);
-router.get('/feed', paginationRules, validate, postController.getFeed);
-router.patch('/:postId', mongoIdParam('postId'), uploadMedia, updatePostRules, validate, postController.updatePost);
-router.put('/:postId', mongoIdParam('postId'), uploadMedia, updatePostRules, validate, postController.updatePost);
-router.delete('/:postId', mongoIdParam('postId'), validate, postController.deletePost);
-router.post('/:postId/like', mongoIdParam('postId'), validate, postController.toggleLike);
+router.route('/').post(uploadMedia, createPostRules, validate, postController.createPost);
+router.route('/').get(paginationRules, validate, postController.getFeed);
+router.route('/feed').get(paginationRules, validate, postController.getFeed);
+router.route('/:postId').patch(mongoIdParam('postId'), uploadMedia, updatePostRules, validate, postController.updatePost);
+router.route('/:postId').put(mongoIdParam('postId'), uploadMedia, updatePostRules, validate, postController.updatePost);
+router.route('/:postId').delete(mongoIdParam('postId'), validate, postController.deletePost);
+router.route('/:postId/like').post(mongoIdParam('postId'), validate, postController.toggleLike);
 
 // Nested comments router
 router.use('/:postId/comments', commentRoutes);

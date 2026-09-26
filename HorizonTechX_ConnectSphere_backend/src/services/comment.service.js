@@ -72,17 +72,15 @@ const getComments = async (postId, { skip = 0, limit = 20 }) => {
 
 const deleteComment = async (postId, commentId, userId) => {
   const comment = await Comment.findById(commentId);
-  if (!comment || String(comment.post) !== String(postId)) {
+  if (!comment || String(comment.post) !== String(postId))
     throw ApiError.notFound('Comment not found');
-  }
 
   const post = await Post.findById(postId);
   const isCommentAuthor = String(comment.author) === String(userId);
   const isPostAuthor = post && String(post.author) === String(userId);
 
-  if (!isCommentAuthor && !isPostAuthor) {
+  if (!isCommentAuthor && !isPostAuthor)
     throw ApiError.forbidden('You do not have permission to delete this comment');
-  }
 
   await Comment.findByIdAndDelete(commentId);
   const updatedPost = await Post.findByIdAndUpdate(

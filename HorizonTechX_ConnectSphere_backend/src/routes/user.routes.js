@@ -11,12 +11,12 @@ const router = Router();
 
 router.use(protect);
 
-router.get('/suggestions', userController.getSuggestions);
-router.patch('/profile', uploadAvatar, updateProfileRules, validate, userController.updateProfile);
-router.put('/profile', uploadAvatar, updateProfileRules, validate, userController.updateProfile);
-router.post('/profile', uploadAvatar, updateProfileRules, validate, userController.updateProfile);
+router.route('/suggestions').get(userController.getSuggestions);
+router.route('/profile').patch(uploadAvatar, updateProfileRules, validate, userController.updateProfile);
+router.route('/profile').put(uploadAvatar, updateProfileRules, validate, userController.updateProfile);
+router.route('/profile').post(uploadAvatar, updateProfileRules, validate, userController.updateProfile);
 
-router.get('/:username', usernameParam, validate, userController.getProfile);
-router.get('/:username/posts', usernameParam, paginationRules, validate, postController.getUserPosts);
+router.route('/:username').get(usernameParam, validate, userController.getProfile);
+router.route('/:username/posts').get(usernameParam, paginationRules, validate, postController.getUserPosts);
 
 export default router;

@@ -1,6 +1,5 @@
 import Post from '../models/Post.model.js';
-
-const AUTHOR_FIELDS = 'username fullName avatar';
+import { AUTHOR_FIELDS } from "../constents.js"
 
 const withAuthor = (query) => query.populate('author', AUTHOR_FIELDS).lean();
 

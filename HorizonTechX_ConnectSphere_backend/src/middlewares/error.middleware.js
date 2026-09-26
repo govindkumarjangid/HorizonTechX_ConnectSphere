@@ -14,7 +14,7 @@ const normalizeError = (err) => {
     return { statusCode: 400, message: 'Validation failed', errors };
   }
 
-  // invalid ObjectId, e.g. /posts/123
+  // invalid ObjectId 
   if (err.name === 'CastError')
     return { statusCode: 400, message: `Invalid ${err.path}`, errors: [] };
 

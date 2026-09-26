@@ -1,6 +1,5 @@
 import express from 'express';
 import helmet from 'helmet';
-import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
@@ -19,7 +18,7 @@ const app = express();
 
 if (env.isProd) app.set('trust proxy', 1);
 
-// Bulletproof CORS configuration and preflight handler
+// CORS configuration
 const allowedMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
 const allowedHeaders = [
   'Content-Type',
@@ -49,23 +48,14 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Expose-Headers', exposedHeaders.join(', '));
   res.setHeader('Access-Control-Max-Age', '86400');
 
-  // Respond immediately with 204 to any OPTIONS preflight request
-  if (req.method === 'OPTIONS') {
+  if (req.method === 'OPTIONS')
     return res.status(204).end();
-  }
-
   next();
 });
 
-// 2. Security headers (allowing cross-origin requests from frontend)
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  })
-);
-
+// Security headers
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(compression());
-
 if (env.nodeEnv !== 'test')
   app.use(morgan(env.isProd ? 'combined' : 'dev'));
 
@@ -86,7 +76,7 @@ app.get(['/health', '/api/health', `${API_PREFIX}/health`, '/'], (_req, res) => 
 
 const tooManyRequests = (message) => ({ success: false, message, data: null });
 
-// general limit for the whole API (skip preflight requests)
+// general limit for the whole API
 app.use('/api',
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -113,11 +103,8 @@ app.use(`${API_PREFIX}/auth/login`, authLimiter);
 app.use(`${API_PREFIX}/auth/register`, authLimiter);
 
 app.use('/api', routes);
-if (API_PREFIX !== '/api') {
-  app.use(API_PREFIX, routes);
-}
+if (API_PREFIX !== '/api') app.use(API_PREFIX, routes);
 
-// these two must stay last
 app.use(notFound);
 app.use(errorHandler);
 

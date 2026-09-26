@@ -9,6 +9,9 @@ export const API_PREFIX = '/api/v1';
 
 export const SHUTDOWN_TIMEOUT_MS = 10_000;
 
+export const AUTHOR_FIELDS = 'username fullName avatar';
+export const USER_FIELDS = 'username fullName bio avatar';
+
 export const PRESETS = {
   avatar: {
     folder: 'avatars',
