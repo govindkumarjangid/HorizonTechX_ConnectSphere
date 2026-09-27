@@ -37,7 +37,6 @@ export const App = () => {
             <Toast />
             <Suspense fallback={<RouteFallback />}>
               <Routes>
-                {/* Public Authentication Pages */}
                 <Route
                   path="/login"
                   element={
