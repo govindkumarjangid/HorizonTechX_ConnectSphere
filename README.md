@@ -1,48 +1,54 @@
 # HorizonTechX ConnectSphere
 
-ConnectSphere is a full-stack social networking web application built on the MERN stack (MongoDB, Express, React 19, Node.js). It provides user authentication, profile management, a community post feed with media uploads via Cloudinary, social interactions, and real-time event notifications via Socket.IO.
+ConnectSphere (branded in the web client as Connectly) is a full-stack social networking web application built on the MERN stack (MongoDB, Express, React 19, Node.js). It provides user authentication, customizable profiles, media post sharing with Cloudinary, real-time social notifications over WebSockets via Socket.IO, and a responsive interface with dark/light theme support.
 
 ## Features
 
-### Authentication
-- User registration with username, password, and optional full name and email
-- User login with either username or email and password
-- JWT access tokens for authorization and HTTP-only refresh token cookies
-- Session verification endpoint (`/api/auth/me`) with automatic client-side authentication hydration
-- Secure logout clearing authentication state and cookies
+### Authentication & Sessions
+- User registration requiring username and password, with optional full name and email
+- User login accepting either username or email with password
+- Dual-token session strategy: JWT access token in the response payload and HTTP-only refresh token in secure cookies
+- Session verification endpoint (`/api/auth/me`) with automatic client-side hydration on page refresh
+- Secure logout clearing client-side tokens and backend cookies
+- Protected client-side routing redirecting unauthenticated users to `/login`
 
 ### User Profiles
-- Public profile view by username displaying avatar, full name, username, bio, website link, post count, and follower/following counts
-- Profile editing for authenticated users to update full name, bio, website, and avatar
-- Avatar image uploads handled via Multer and Cloudinary
+- Public profile view by username showing avatar, full name, username, bio, website link, post count, and follower/following counts
+- Profile editing for authenticated users to update full name, bio, website link, and avatar
+- Avatar image uploads processed through Multer and uploaded to Cloudinary
 - Dynamic suggested users widget ("Who to follow") listing non-followed accounts
+- Followers and following list modals with quick follow/unfollow actions
 
-### Posts and Comments
-- Post creation supporting text content and optional media uploads (images and videos)
-- Chronological community feed with infinite scroll pagination
-- Author post management with in-place text editing and deletion
-- Post deletion cascades to remove associated likes and comments
-- Post commenting with paginated comment lists per post
+### Posts & Media
+- Post creation supporting text content and optional media attachments (images and videos)
+- Live client-side media previews with remove options before publishing
+- Direct media uploading to Cloudinary with automatic format optimization
+- Chronological global feed with infinite scroll pagination
+- Profile posts tab showing all posts authored by a specific user
+- Author post management with in-place text and media updating
+- Author post deletion cascading to delete associated likes and comments from MongoDB
+- Text parsing for `@username` mentions (links to user profile) and `#hashtag` highlights
+
+### Comments & Reactions
+- Commenting system on all posts with paginated comment lists
 - Author comment deletion
+- Like and unlike toggling with optimistic UI updates and synchronized counters
+- Dedicated confirmation modals before deleting posts or comments
 
-### Social Interactions
-- Like and unlike posts with immediate UI updates and synchronized counters
-- Follow and unfollow users with synchronized follower and following counters
-- Modal dialogs to view followers and following lists on user profiles
+### Real-Time Interactions (Socket.IO)
+- Authenticated WebSocket handshake validating JWT access tokens
+- Instant pop-up toast notifications and navbar unread counter increments for:
+  - New followers
+  - Likes on own posts
+  - Comments on own posts
+- Real-time feed synchronization for post creation and post deletion across active sessions
+- Unread notification counter badge on the navbar bell icon, reset on click
 
-### Real-Time Updates
-- Authenticated Socket.IO connection using JWT tokens
-- Real-time notification toasts and navbar badge counter for incoming follows, likes, and comments
-- Real-time feed event updates for post creation and post deletion
-
-## In progress / Not built yet
-- Password recovery and reset via email
-- Email verification flow (registration currently activates immediately)
-- Direct messaging and private 1-on-1 chat
-- Stories and temporary status updates
-- Persistent notification history page (notifications are real-time toasts and navbar badge counters)
-- Global search for users and posts
-- Bookmarked and saved posts collection
+### UI & Styling
+- Dark mode and light mode theme toggle with system preference detection and localStorage persistence
+- Full-page and component skeleton loaders during data fetching for feed, profile, and suggested users
+- Responsive navigation layout featuring a desktop sidebar, a suggested users sidebar, and a mobile bottom navigation bar
+- Error boundary wrapper to catch runtime rendering errors gracefully
 
 ## Tech Stack
 
@@ -150,10 +156,35 @@ HorizonTechX_ConnectSphere/
         │   └── userApi.js
         ├── components/
         │   ├── comments/
+        │   │   ├── CommentBox.jsx
+        │   │   ├── CommentItem.jsx
+        │   │   └── CommentList.jsx
         │   ├── common/
+        │   │   ├── ConfirmModal.jsx
+        │   │   ├── EmptyState.jsx
+        │   │   ├── ErrorBoundary.jsx
+        │   │   ├── Loader.jsx
+        │   │   ├── Logo.jsx
+        │   │   ├── Modal.jsx
+        │   │   └── Toast.jsx
         │   ├── layout/
+        │   │   ├── Layout.jsx
+        │   │   ├── MobileNav.jsx
+        │   │   ├── Navbar.jsx
+        │   │   ├── RightSidebar.jsx
+        │   │   └── Sidebar.jsx
         │   ├── posts/
+        │   │   ├── EditPostModal.jsx
+        │   │   ├── FormattedText.jsx
+        │   │   ├── LikeButton.jsx
+        │   │   ├── PostCard.jsx
+        │   │   ├── PostForm.jsx
+        │   │   └── PostList.jsx
         │   └── users/
+        │       ├── Avatar.jsx
+        │       ├── FollowButton.jsx
+        │       ├── FollowListModal.jsx
+        │       └── ProfileHeader.jsx
         ├── context/
         │   ├── AuthContext.jsx
         │   └── SocketContext.jsx
@@ -185,9 +216,9 @@ HorizonTechX_ConnectSphere/
 
 ## Prerequisites
 
-- Node.js 18.x or higher (Node 20+ recommended)
+- Node.js 18.x or higher (tested on Node 20+)
 - npm 9.x or higher
-- MongoDB instance (MongoDB Atlas connection string or local MongoDB instance)
+- MongoDB instance (MongoDB Atlas cluster URI or local MongoDB instance)
 - Cloudinary account for media assets (Cloud Name, API Key, API Secret)
 
 ## Environment Variables
@@ -265,9 +296,9 @@ All routes are mounted under `/api` (and `/api/v1`).
 | Method | Path | Auth Required | Purpose |
 |---|---|---|---|
 | `GET` | `/health`, `/api/health` | No | Server health and database connection check |
-| `POST` | `/api/auth/register` | No | Register a new user |
-| `POST` | `/api/auth/login` | No | Authenticate user credentials and return token |
-| `POST` | `/api/auth/logout` | No | Log out user and clear auth cookies |
+| `POST` | `/api/auth/register` | No | Register a new user account |
+| `POST` | `/api/auth/login` | No | Authenticate user credentials and return access token |
+| `POST` | `/api/auth/logout` | No | Log out user and clear authentication cookies |
 | `GET` | `/api/auth/me` | Yes | Retrieve authenticated user profile |
 | `GET` | `/api/posts` | Yes | Get paginated community feed posts |
 | `POST` | `/api/posts` | Yes | Create a new post with optional media upload |
@@ -277,8 +308,8 @@ All routes are mounted under `/api` (and `/api/v1`).
 | `GET` | `/api/posts/:postId/comments` | Yes | Get paginated comments for a post |
 | `POST` | `/api/posts/:postId/comments` | Yes | Add a comment to a post |
 | `DELETE` | `/api/posts/:postId/comments/:commentId` | Yes | Delete own comment from a post |
-| `POST` | `/api/follow/:userId` | Yes | Follow a user |
-| `DELETE` | `/api/follow/:userId` | Yes | Unfollow a user |
+| `POST` | `/api/follow/:userId` | Yes | Follow a target user |
+| `DELETE` | `/api/follow/:userId` | Yes | Unfollow a target user |
 | `GET` | `/api/follow/:username/followers` | Yes | Get paginated followers of a user |
 | `GET` | `/api/follow/:username/following` | Yes | Get paginated following list of a user |
 | `GET` | `/api/users/suggestions` | Yes | Get suggested users to follow |
@@ -286,14 +317,35 @@ All routes are mounted under `/api` (and `/api/v1`).
 | `GET` | `/api/users/:username` | Yes | Get user profile by username |
 | `GET` | `/api/users/:username/posts` | Yes | Get paginated posts authored by a user |
 
-## Known Limitations
+## WebSocket Events (Socket.IO)
 
-- In-memory WebSocket state: Socket.IO connections and room memberships are maintained in single-process memory. Horizontal scaling across multiple server instances requires a shared adapter such as Redis.
-- Username/password only: There is no password reset via email or email confirmation pipeline.
-- Ephemeral notifications: Notifications are emitted directly via WebSockets to connected clients as toasts and navbar counter updates; there is no persistent notification log stored in the database.
-- Cloudinary dependency: Media uploads require an active Cloudinary account; local filesystem fallback for uploaded files is not implemented.
-- Test coverage: Automated test suites (unit/integration) are not currently configured in package.json scripts.
+| Event | Direction | Payload | Purpose |
+|---|---|---|---|
+| `connection` | Client &rarr; Server | Auth token in handshake | Authenticates client and joins room `user:<userId>` |
+| `notification:new` | Server &rarr; Client | `{ type, message, sender, postId? }` | Dispatches live toast and increments navbar unread counter |
+| `post:created` | Server &rarr; Client | `{ post }` | Broadcasts newly published post to active feeds |
+| `post:deleted` | Server &rarr; Client | `{ postId }` | Broadcasts deleted post ID to remove it from feeds |
+| `profile:updated` | Server &rarr; Client | `{ user }` | Broadcasts profile updates across sessions |
 
-## License
+## Manual Verification Checklist (2-User Real-Time Test)
 
-ISC
+To verify real-time capabilities and core workflows:
+
+1. Open two separate browser sessions:
+   - Window 1 (Standard window): `http://localhost:5173`
+   - Window 2 (Incognito / private window): `http://localhost:5173`
+2. Register two test accounts:
+   - Window 1: Register as User A (e.g. `alice`)
+   - Window 2: Register as User B (e.g. `bob`)
+3. Follow interaction:
+   - In Window 2 (User B), navigate to User A's profile or find them in "Who to follow" and click **Follow**.
+   - Observe in Window 1 (User A): A real-time toast notification appears (`@bob started following you`) and the notification bell count increments.
+4. Post creation with media:
+   - In Window 1 (User A), compose a post with text and select an image or video file.
+   - Click **Post**. Notice the loader during Cloudinary upload and the post rendering at the top of the feed.
+5. Like interaction:
+   - In Window 2 (User B), click the like heart icon on User A's post.
+   - Observe in Window 1 (User A): A real-time notification toast appears (`@bob liked your post`) and the like counter updates.
+6. Comment interaction:
+   - In Window 2 (User B), open comments on User A's post and submit a comment.
+   - Observe in Window 1 (User A): A real-time notification toast appears (`@bob commented on your post`) and the comment appears in the list.
